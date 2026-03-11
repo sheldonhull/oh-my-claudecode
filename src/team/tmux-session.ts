@@ -118,6 +118,12 @@ function getLaunchWords(config: WorkerPaneConfig): string[] {
     return [config.launchBinary, ...(config.launchArgs ?? [])];
   }
   if (config.launchCmd) {
+    if (config.launchCmd.trim().length === 0) {
+      throw new Error('Invalid launchCmd: value cannot be empty');
+    }
+    if (/[;&|`$()<>\n\r\t\0"\\]/.test(config.launchCmd)) {
+      throw new Error('Invalid launchCmd: contains dangerous shell metacharacters');
+    }
     return [config.launchCmd];
   }
   throw new Error('Missing worker launch command. Provide launchBinary or launchCmd.');
@@ -816,7 +822,10 @@ export async function killWorkerPanes(opts: {
   const shutdownPath = join(cwd, '.omc', 'state', 'team', teamName, 'shutdown.json');
   try {
     await fs.writeFile(shutdownPath, JSON.stringify({ requestedAt: Date.now() }));
-    await sleep(graceMs);
+    const aliveChecks = await Promise.all(paneIds.map(id => isWorkerAlive(id)));
+    if (aliveChecks.some(alive => alive)) {
+      await sleep(graceMs);
+    }
   } catch { /* sentinel write failure is non-fatal */ }
 
   // 2. Force-kill each worker pane, guarding leader

@@ -176,6 +176,7 @@ export function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   const mutableResult = result as Record<string, unknown>;
 
   for (const key of Object.keys(source) as (keyof T)[]) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     const sourceValue = source[key];
     const targetValue = mutableResult[key as string];
 

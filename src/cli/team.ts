@@ -384,8 +384,11 @@ export async function startTeamJob(input: TeamStartInput): Promise<TeamStartResu
     sentinelGatePollIntervalMs: input.sentinelGatePollIntervalMs,
   };
 
-  child.stdin.write(JSON.stringify(payload));
-  child.stdin.end();
+  if (child.stdin && typeof child.stdin.on === 'function') {
+    child.stdin.on('error', () => {});
+  }
+  child.stdin?.write(JSON.stringify(payload));
+  child.stdin?.end();
   child.unref();
 
   if (child.pid != null) {

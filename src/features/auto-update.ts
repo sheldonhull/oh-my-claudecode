@@ -193,6 +193,7 @@ export function getOMCConfig(): OMCConfig {
       notificationProfiles: config.notificationProfiles,
       hudEnabled: config.hudEnabled,
       autoUpgradePrompt: config.autoUpgradePrompt,
+      nodeBinary: config.nodeBinary,
     };
   } catch {
     // If config file is invalid, default to disabled for security
