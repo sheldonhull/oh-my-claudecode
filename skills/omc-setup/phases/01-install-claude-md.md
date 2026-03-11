@@ -37,6 +37,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/.vendored/install-claude-md.sh" <CONFIG_TARGET>
 
 Replace `<CONFIG_TARGET>` with `local` or `global`.
 
+The script must install the canonical `docs/CLAUDE.md` content and preserve the required
+`<!-- OMC:START -->` / `<!-- OMC:END -->` markers. Do **not** hand-write, summarize, or
+partially reconstruct CLAUDE.md.
+
+After running the script, verify the target file contains both markers. If marker validation
+fails, stop and report the failure instead of writing CLAUDE.md manually.
+
 **FALLBACK** if the vendored copy is missing or empty:
 Tell user to run the `/harden` skill to refresh the vendored copy from `docs/CLAUDE.md`.
 
