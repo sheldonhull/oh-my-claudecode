@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -18,7 +18,7 @@ function writeTranscript(dir, inputTokens, contextWindow) {
 }
 function runContextSafety(input, env = {}) {
     try {
-        const stdout = execSync(`node "${SCRIPT_PATH}"`, {
+        const stdout = execFileSync('node', [SCRIPT_PATH], {
             input: JSON.stringify(input),
             encoding: 'utf-8',
             stdio: ['pipe', 'pipe', 'pipe'],
