@@ -15,30 +15,41 @@ Otherwise (initial setup wizard), use AskUserQuestion to prompt:
 
 Set `CONFIG_TARGET` to `local` or `global` based on user's choice.
 
-## Download and Install CLAUDE.md
+## Confirm Before Modifying
 
-**MANDATORY**: Always run this command. Do NOT skip. Do NOT use the Write tool. Use bash curl exclusively.
+Before running the installer, use AskUserQuestion to confirm:
+
+**Question:** "This will inject OMC instructions (between `<!-- OMC:START -->` / `<!-- OMC:END -->` markers) directly into your CLAUDE.md. Any existing OMC block will be replaced. Your other content is preserved. Proceed?"
+
+**Options:**
+1. **Yes, install** - Inject OMC instructions into CLAUDE.md (backs up existing file first)
+2. **Cancel** - Exit without changes
+
+If user cancels, **STOP HERE**. Do not continue to any other phase.
+
+## Install CLAUDE.md (Vendored)
+
+Uses vendored local copy — no network, no curl. Do NOT use the Write tool.
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-claude-md.sh" <CONFIG_TARGET>
+bash "${CLAUDE_PLUGIN_ROOT}/.vendored/install-claude-md.sh" <CONFIG_TARGET>
 ```
 
 Replace `<CONFIG_TARGET>` with `local` or `global`.
 
-**FALLBACK** if curl fails:
-Tell user to manually download from:
-https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md
+**FALLBACK** if the vendored copy is missing or empty:
+Tell user to run the `/harden` skill to refresh the vendored copy from `docs/CLAUDE.md`.
 
-**Note**: The downloaded CLAUDE.md includes Context Persistence instructions with `<remember>` tags for surviving conversation compaction.
+**Note**: The installed CLAUDE.md includes Context Persistence instructions with `<remember>` tags for surviving conversation compaction.
 
-**Note**: If an existing CLAUDE.md is found, it will be backed up before downloading the new version.
+**Note**: If an existing CLAUDE.md is found, it will be backed up before installing the new version.
 
 ## Report Success
 
 If `CONFIG_TARGET` is `local`:
 ```
 OMC Project Configuration Complete
-- CLAUDE.md: Updated with latest configuration from GitHub at ./.claude/CLAUDE.md
+- CLAUDE.md: Updated with vendored OMC instructions at ./.claude/CLAUDE.md
 - Backup: Previous CLAUDE.md backed up (if existed)
 - Scope: PROJECT - applies only to this project
 - Hooks: Provided by plugin (no manual installation needed)
@@ -51,7 +62,7 @@ Note: This configuration is project-specific and won't affect other projects or 
 If `CONFIG_TARGET` is `global`:
 ```
 OMC Global Configuration Complete
-- CLAUDE.md: Updated with latest configuration from GitHub at ~/.claude/CLAUDE.md
+- CLAUDE.md: Updated with vendored OMC instructions at ~/.claude/CLAUDE.md
 - Backup: Previous CLAUDE.md backed up (if existed)
 - Scope: GLOBAL - applies to all Claude Code sessions
 - Hooks: Provided by plugin (no manual installation needed)

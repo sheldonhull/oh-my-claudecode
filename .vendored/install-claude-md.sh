@@ -57,10 +57,8 @@ if grep -q '<!-- OMC:START -->' "$TEMP_OMC"; then
 fi
 
 if [ ! -f "$TARGET_PATH" ]; then
-  # Fresh install: wrap in markers, add @import reference
+  # Fresh install: wrap in markers
   {
-    echo "for: @~/.claude/CLAUDE.OMC.md"
-    echo ""
     echo '<!-- OMC:START -->'
     cat "$TEMP_OMC"
     echo '<!-- OMC:END -->'
@@ -72,13 +70,12 @@ else
     perl -0pe 's/^<!-- OMC:START -->\R[\s\S]*?^<!-- OMC:END -->(?:\R)?//msg; s/^<!-- User customizations(?: \([^)]+\))? -->\R?//mg; s/\A(?:[ \t]*\R)+//; s/(?:\R[ \t]*)+\z//;' \
       "$TARGET_PATH" > "${TARGET_PATH}.preserved"
 
+    # Strip any legacy @import references
+    sed -i.bak '/^for: @.*CLAUDE\.OMC\.md/d' "${TARGET_PATH}.preserved"
+    rm -f "${TARGET_PATH}.preserved.bak"
+
     PRESERVED_CONTENT=$(cat "${TARGET_PATH}.preserved")
     {
-      # Ensure @import reference is at top
-      if ! echo "$PRESERVED_CONTENT" | grep -q 'CLAUDE.OMC.md'; then
-        echo "for: @~/.claude/CLAUDE.OMC.md"
-        echo ""
-      fi
       echo '<!-- OMC:START -->'
       cat "$TEMP_OMC"
       echo '<!-- OMC:END -->'
@@ -94,8 +91,6 @@ else
   else
     OLD_CONTENT=$(cat "$TARGET_PATH")
     {
-      echo "for: @~/.claude/CLAUDE.OMC.md"
-      echo ""
       echo '<!-- OMC:START -->'
       cat "$TEMP_OMC"
       echo '<!-- OMC:END -->'

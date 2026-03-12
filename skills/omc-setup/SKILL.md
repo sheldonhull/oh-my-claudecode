@@ -45,13 +45,13 @@ MODES:
     - If already configured, offers quick update option
 
   Local Configuration (--local)
-    - Downloads fresh CLAUDE.md to ./.claude/
+    - Installs vendored CLAUDE.md to ./.claude/
     - Backs up existing CLAUDE.md to .claude/CLAUDE.md.backup.YYYY-MM-DD
     - Project-specific settings
     - Use this to update project config after OMC upgrades
 
   Global Configuration (--global)
-    - Downloads fresh CLAUDE.md to ~/.claude/
+    - Installs vendored CLAUDE.md to ~/.claude/
     - Backs up existing CLAUDE.md to ~/.claude/CLAUDE.md.backup.YYYY-MM-DD
     - Applies to all Claude Code sessions
     - Cleans up legacy hooks
@@ -100,14 +100,14 @@ Use AskUserQuestion to prompt:
 **Question:** "OMC is already configured. What would you like to do?"
 
 **Options:**
-1. **Update CLAUDE.md only** - Download latest CLAUDE.md without re-running full setup
+1. **Update CLAUDE.md only** - Install vendored CLAUDE.md without re-running full setup
 2. **Run full setup again** - Go through the complete setup wizard
 3. **Cancel** - Exit without changes
 
 **If user chooses "Update CLAUDE.md only":**
 - Detect if local (.claude/CLAUDE.md) or global (~/.claude/CLAUDE.md) config exists
-- If local exists, run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-claude-md.sh" local`
-- If only global exists, run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-claude-md.sh" global`
+- If local exists, run: `bash "${CLAUDE_PLUGIN_ROOT}/.vendored/install-claude-md.sh" local`
+- If only global exists, run: `bash "${CLAUDE_PLUGIN_ROOT}/.vendored/install-claude-md.sh" global`
 - Skip all other steps
 - Report success and exit
 
