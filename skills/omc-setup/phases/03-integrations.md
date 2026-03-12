@@ -8,20 +8,7 @@
 grep -q "oh-my-claudecode" ~/.claude/settings.json && echo "Plugin verified" || echo "Plugin NOT found - run: claude /install-plugin oh-my-claudecode"
 ```
 
-## Step 3.2: Offer MCP Server Configuration
-
-MCP servers extend Claude Code with additional tools (web search, GitHub, etc.).
-
-Use AskUserQuestion: "Would you like to configure MCP servers for enhanced capabilities? (Context7, Exa search, GitHub, etc.)"
-
-If yes, invoke the mcp-setup skill:
-```
-/oh-my-claudecode:mcp-setup
-```
-
-If no, skip to next step.
-
-## Step 3.3: Configure Agent Teams (Optional)
+## Step 3.2: Configure Agent Teams (Optional)
 
 Agent teams are an experimental Claude Code feature that lets you spawn N coordinated agents working on a shared task list with inter-agent messaging. **Teams are disabled by default** and require enabling via `settings.json`.
 
@@ -37,7 +24,7 @@ Use AskUserQuestion:
 
 ### If User Chooses YES:
 
-#### 3.3.1: Enable Agent Teams in settings.json
+#### 3.2.1: Enable Agent Teams in settings.json
 
 **CRITICAL**: Agent teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` to be set in `~/.claude/settings.json`. This must be done carefully to preserve existing user settings.
 
@@ -80,7 +67,7 @@ fi
 
 **IMPORTANT**: The Edit tool is preferred for modifying settings.json when possible, since it preserves formatting and comments. The jq approach above is the fallback for when the file needs structural merging.
 
-#### 3.3.2: Configure Teammate Display Mode
+#### 3.2.2: Configure Teammate Display Mode
 
 Use AskUserQuestion:
 
@@ -102,7 +89,7 @@ jq --arg mode "TEAMMATE_MODE" '. + {teammateMode: $mode}' "$SETTINGS_FILE" > "${
 echo "Teammate display mode set to: TEAMMATE_MODE"
 ```
 
-#### 3.3.3: Configure Team Defaults in omc-config
+#### 3.2.3: Configure Team Defaults in omc-config
 
 Use AskUserQuestion with multiple questions:
 

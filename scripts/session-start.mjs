@@ -292,28 +292,9 @@ async function main() {
     const sessionId = data.session_id || data.sessionId || '';
     const messages = [];
 
-    // Check for version drift between components
-    const driftInfo = detectVersionDrift();
-    if (driftInfo && shouldNotifyDrift(driftInfo)) {
-      let driftMsg = `[OMC VERSION DRIFT DETECTED]\n\nPlugin version: ${driftInfo.pluginVersion}\n`;
-      for (const d of driftInfo.drift) {
-        driftMsg += `${d.component}: ${d.current} (expected ${d.expected})\n`;
-      }
-      driftMsg += `\nRun 'omc update' to sync all components.`;
-
-      messages.push(`<session-restore>\n\n${driftMsg}\n\n</session-restore>\n\n---\n`);
-    }
-
-    // Check npm registry for available update (with 24h cache)
-    try {
-      const pluginVersion = getPluginVersion();
-      if (pluginVersion) {
-        const updateInfo = await checkNpmUpdate(pluginVersion);
-        if (updateInfo) {
-          messages.push(`<session-restore>\n\n[OMC UPDATE AVAILABLE]\n\nA new version of oh-my-claudecode is available: v${updateInfo.latestVersion} (current: v${updateInfo.currentVersion})\n\nTo update, run: omc update\n(This syncs plugin, npm package, and CLAUDE.md together)\n\n</session-restore>\n\n---\n`);
-        }
-      }
-    } catch {}
+    // HARDENED: Version drift detection and npm registry checks disabled.
+    // In hardened fork, versions are managed manually via /harden skill.
+    // No network calls on session start.
 
     // Check HUD installation (one-time setup guidance)
     const hudCheck = await checkHudInstallation();

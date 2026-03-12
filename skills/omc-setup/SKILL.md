@@ -40,7 +40,7 @@ MODES:
     - Configures CLAUDE.md (local or global)
     - Sets up HUD statusline
     - Checks for updates
-    - Offers MCP server configuration
+    - Configures agent teams (optional)
     - Configures team mode defaults (agent count, type, model)
     - If already configured, offers quick update option
 

@@ -34,7 +34,10 @@ Task(
     ### Built-In Hardening Applied
     - curl-based CLAUDE.md download replaced with vendored copy
     - .vendored/install-claude-md.sh replaces scripts/setup-claude-md.sh
-    - CLAUDE.md includes `for: @~/.claude/CLAUDE.OMC.md` import reference
+    - OMC content injected directly via markers (no @file references)
+    - Setup prompts user before modifying CLAUDE.md
+    - Version drift detection and npm registry fetch removed from session-start
+    - MCP server configuration removed from default setup flow
     - Auto-update disabled (performUpdate, silentAutoUpdate, fetchLatestRelease, backgroundUpdateCheck)
     - Only runtime binary: node >=20 (managed by user's global mise)
 

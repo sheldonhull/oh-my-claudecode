@@ -44,7 +44,7 @@ Task(
           (should return NO matches for download URLs — the raw.githubusercontent reference
           in comments is acceptable but active download calls are not)
     - [ ] Confirm it references .vendored/CLAUDE.OMC.md as source
-    - [ ] Confirm it adds "for: @~/.claude/CLAUDE.OMC.md" reference line
+    - [ ] Confirm it injects content directly via OMC markers (no @file references)
     - [ ] Run a dry-check: bash -n .vendored/install-claude-md.sh (syntax check only)
     - [ ] Report: "✓ Vendored installer verified. No network calls. Syntax valid."
 )

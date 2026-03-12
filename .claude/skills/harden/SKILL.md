@@ -32,11 +32,14 @@ Paths are relative to the project root (this skill lives in `.claude/skills/hard
 
 These directives are applied automatically during every sync:
 
-1. **No curl in setup path** — `.vendored/install-claude-md.sh` replaces `scripts/setup-claude-md.sh`. No network download of CLAUDE.md content.
+1. **No curl in setup path** — `.vendored/install-claude-md.sh` replaces `scripts/setup-claude-md.sh`. No network download of CLAUDE.md content. OMC instructions inject directly between `<!-- OMC:START -->` / `<!-- OMC:END -->` markers — no `@file` references.
 2. **Auto-update disabled** — `src/features/auto-update.ts` `performUpdate()` and `silentAutoUpdate()` are stubbed to return early. No `npm install -g @latest`, no GitHub API version checks, no raw.githubusercontent fallback.
-3. **GitHub Actions disabled** — all workflows (CI, release, publish, cleanup, stale, auto-label) disabled via `gh workflow disable`. No file changes needed — uses GitHub API, zero merge conflict risk.
-4. **No npm publish** — this is a local vendored fork. No publishing workflow.
-5. **Node-only runtime** — the only required binary is `node >=20` (user manages via global mise). No additional tool installs needed.
+3. **No version drift checks** — `scripts/session-start.mjs` version drift detection and npm registry fetch removed. No network calls on session start.
+4. **No MCP in setup** — MCP server configuration step removed from `skills/omc-setup/phases/03-integrations.md`. Users can run `/mcp-setup` separately if needed.
+5. **Setup prompts before modifying** — `skills/omc-setup/phases/01-install-claude-md.md` requires user confirmation via AskUserQuestion before injecting into CLAUDE.md.
+6. **GitHub Actions disabled** — all workflows (CI, release, publish, cleanup, stale, auto-label) disabled via `gh workflow disable`. No file changes needed — uses GitHub API, zero merge conflict risk.
+7. **No npm publish** — this is a local vendored fork. No publishing workflow.
+8. **Node-only runtime** — the only required binary is `node >=20` (user manages via global mise). No additional tool installs needed.
 
 ### What is left alone (acceptable)
 
