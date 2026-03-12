@@ -97,7 +97,43 @@ Task(
 )
 ```
 
-## Task C - Hardened file integrity
+## Task C - Disable GitHub Actions workflows
+
+```text
+Task(
+  subagent_type: "general-purpose"
+  model: "haiku"
+  name: "Engineer-Uhura-KillCI"
+  run_in_background: false
+  description: "Disable all GitHub workflows"
+  prompt: |
+    Disable all GitHub Actions workflows in this fork via the gh CLI.
+    This is a hardened fork — no CI, release, or publish workflows should run.
+    Uses gh API so no file changes are needed (zero merge conflict risk).
+
+    - [ ] List all workflows: gh workflow list --all
+    - [ ] For each workflow, disable it:
+          gh workflow disable ci.yml
+          gh workflow disable release.yml
+          gh workflow disable pr-check.yml
+          gh workflow disable cleanup.yml
+          gh workflow disable stale.yml
+          gh workflow disable auto-label.yml
+    - [ ] Also check for any NEW workflows added by upstream merge:
+          ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null
+    - [ ] Disable any new workflows not in the list above
+    - [ ] Verify all disabled: gh workflow list --all
+          (all should show "disabled_manually")
+    - [ ] Report: "✓ All GitHub Actions workflows disabled. No CI/CD will trigger."
+
+    NOTE: If gh is not authenticated or unavailable, report:
+          "⚠️  gh CLI not available. Manually disable workflows at:
+           https://github.com/sheldonhull/oh-my-claudecode/actions
+           Settings > Actions > select each workflow > Disable"
+)
+```
+
+## Task D - Hardened file integrity
 
 ```text
 Task(
@@ -132,7 +168,8 @@ Task(
     - [ ] If any CRITICAL findings: present to user via AskUser and STOP
     - [ ] If WARNING findings: present to user via AskUser, ask to proceed or fix
     - [ ] Confirm Task B disabled auto-update (4 functions stubbed)
-    - [ ] Confirm Task C verified all hardened files
+    - [ ] Confirm Task C disabled all GitHub Actions workflows
+    - [ ] Confirm Task D verified all hardened files
     - [ ] Report: "✓ Phase 4 audit passed. Security review complete."
 )
 ```

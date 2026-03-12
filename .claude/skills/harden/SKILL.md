@@ -34,8 +34,9 @@ These directives are applied automatically during every sync:
 
 1. **No curl in setup path** — `.vendored/install-claude-md.sh` replaces `scripts/setup-claude-md.sh`. No network download of CLAUDE.md content.
 2. **Auto-update disabled** — `src/features/auto-update.ts` `performUpdate()` and `silentAutoUpdate()` are stubbed to return early. No `npm install -g @latest`, no GitHub API version checks, no raw.githubusercontent fallback.
-3. **No npm publish** — this is a local vendored fork. No publishing workflow.
-4. **Node-only runtime** — the only required binary is `node >=20` (user manages via global mise). No additional tool installs needed.
+3. **GitHub Actions disabled** — all workflows (CI, release, publish, cleanup, stale, auto-label) disabled via `gh workflow disable`. No file changes needed — uses GitHub API, zero merge conflict risk.
+4. **No npm publish** — this is a local vendored fork. No publishing workflow.
+5. **Node-only runtime** — the only required binary is `node >=20` (user manages via global mise). No additional tool installs needed.
 
 ### What is left alone (acceptable)
 
