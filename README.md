@@ -401,6 +401,18 @@ MIT
 
 </div>
 
+<!-- OMC:FEATURED-CONTRIBUTORS:START -->
+## Featured by OmC Contributors
+
+Top personal non-fork repos from all-time OMC contributors (100+ GitHub stars).
+
+- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 9.4k)
+- [@junhoyeo](https://github.com/junhoyeo) — [threads-api](https://github.com/junhoyeo/threads-api) (⭐ 1.6k)
+
+_Refresh with `npm run sync-featured-contributors` to pull the full live list from GitHub._
+
+<!-- OMC:FEATURED-CONTRIBUTORS:END -->
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)

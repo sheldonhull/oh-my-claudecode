@@ -1,0 +1,112 @@
+import {
+  FEATURED_CONTRIBUTORS_END_MARKER,
+  FEATURED_CONTRIBUTORS_START_MARKER,
+  FEATURED_CONTRIBUTORS_TITLE,
+  formatStarCount,
+  pickTopPersonalRepo,
+  renderFeaturedContributorsSection,
+  upsertFeaturedContributorsSection,
+} from '../../scripts/generate-featured-contributors.js';
+
+describe('featured contributors generator', () => {
+  it('picks the top personal non-fork repo for a contributor', () => {
+    const repo = pickTopPersonalRepo('alice', [
+      {
+        name: 'forked-hit',
+        full_name: 'alice/forked-hit',
+        html_url: 'https://github.com/alice/forked-hit',
+        stargazers_count: 500,
+        fork: true,
+        owner: { login: 'alice', type: 'User' },
+      },
+      {
+        name: 'org-owned',
+        full_name: 'acme/org-owned',
+        html_url: 'https://github.com/acme/org-owned',
+        stargazers_count: 400,
+        fork: false,
+        owner: { login: 'acme', type: 'Organization' },
+      },
+      {
+        name: 'personal-top',
+        full_name: 'alice/personal-top',
+        html_url: 'https://github.com/alice/personal-top',
+        stargazers_count: 250,
+        fork: false,
+        owner: { login: 'alice', type: 'User' },
+      },
+      {
+        name: 'personal-low',
+        full_name: 'alice/personal-low',
+        html_url: 'https://github.com/alice/personal-low',
+        stargazers_count: 150,
+        fork: false,
+        owner: { login: 'alice', type: 'User' },
+      },
+    ]);
+
+    expect(repo?.full_name).toBe('alice/personal-top');
+  });
+
+  it('renders a compact featured contributors block sorted by stars', () => {
+    const block = renderFeaturedContributorsSection([
+      {
+        login: 'charlie',
+        profileUrl: 'https://github.com/charlie',
+        repoName: 'small-hit',
+        repoFullName: 'charlie/small-hit',
+        repoUrl: 'https://github.com/charlie/small-hit',
+        stars: 150,
+      },
+      {
+        login: 'alice',
+        profileUrl: 'https://github.com/alice',
+        repoName: 'big-hit',
+        repoFullName: 'alice/big-hit',
+        repoUrl: 'https://github.com/alice/big-hit',
+        stars: 2400,
+      },
+    ]);
+
+    expect(block).toContain(FEATURED_CONTRIBUTORS_START_MARKER);
+    expect(block).toContain(FEATURED_CONTRIBUTORS_END_MARKER);
+    expect(block).toContain(FEATURED_CONTRIBUTORS_TITLE);
+    expect(block.indexOf('@alice')).toBeLessThan(block.indexOf('@charlie'));
+    expect(block).toContain('(⭐ 2.4k)');
+    expect(block).toContain('(⭐ 150)');
+  });
+
+  it('inserts the generated block before star history when markers are absent', () => {
+    const updated = upsertFeaturedContributorsSection(
+      '# README\n\nIntro\n\n## Star History\n\nChart\n',
+      `${FEATURED_CONTRIBUTORS_START_MARKER}\nGenerated\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`
+    );
+
+    expect(updated).toContain(`${FEATURED_CONTRIBUTORS_END_MARKER}\n\n## Star History`);
+  });
+
+  it('replaces an existing marker block without disturbing surrounding content', () => {
+    const updated = upsertFeaturedContributorsSection(
+      [
+        '# README',
+        '',
+        FEATURED_CONTRIBUTORS_START_MARKER,
+        'Old block',
+        FEATURED_CONTRIBUTORS_END_MARKER,
+        '',
+        '## Star History',
+      ].join('\n'),
+      `${FEATURED_CONTRIBUTORS_START_MARKER}\nNew block\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`
+    );
+
+    expect(updated).toContain('New block');
+    expect(updated).not.toContain('Old block');
+    expect(updated).toContain('## Star History');
+  });
+
+  it('formats star counts compactly for README output', () => {
+    expect(formatStarCount(100)).toBe('100');
+    expect(formatStarCount(1500)).toBe('1.5k');
+    expect(formatStarCount(12500)).toBe('13k');
+  });
+});
