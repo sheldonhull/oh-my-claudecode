@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import {
   FEATURED_CONTRIBUTORS_END_MARKER,
   FEATURED_CONTRIBUTORS_START_MARKER,
@@ -6,7 +7,7 @@ import {
   pickTopPersonalRepo,
   renderFeaturedContributorsSection,
   upsertFeaturedContributorsSection,
-} from '../../scripts/generate-featured-contributors.js';
+} from '../lib/featured-contributors.js';
 
 describe('featured contributors generator', () => {
   it('picks the top personal non-fork repo for a contributor', () => {
