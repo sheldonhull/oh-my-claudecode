@@ -4275,16 +4275,16 @@ async function hasWorkerTaskClaimEvidence(teamName, workerName2, cwd, taskId) {
     return false;
   }
 }
-async function hasClaudeStartupEvidence(teamName, workerName2, taskId, cwd) {
+async function hasWorkerStartupEvidence(teamName, workerName2, taskId, cwd) {
   const [hasClaimEvidence, status] = await Promise.all([
     hasWorkerTaskClaimEvidence(teamName, workerName2, cwd, taskId),
     readWorkerStatus(teamName, workerName2, cwd)
   ]);
   return hasClaimEvidence || hasWorkerStatusProgress(status, taskId);
 }
-async function waitForClaudeStartupEvidence(teamName, workerName2, taskId, cwd, attempts = 3, delayMs = 250) {
+async function waitForWorkerStartupEvidence(teamName, workerName2, taskId, cwd, attempts = 3, delayMs = 250) {
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    if (await hasClaudeStartupEvidence(teamName, workerName2, taskId, cwd)) {
+    if (await hasWorkerStartupEvidence(teamName, workerName2, taskId, cwd)) {
       return true;
     }
     if (attempt < attempts) {
@@ -4322,7 +4322,6 @@ async function spawnV2Worker(opts) {
     opts.task,
     opts.taskId
   );
-  const relInboxPath = `.omc/state/team/${opts.teamName}/workers/${opts.workerName}/inbox.md`;
   const inboxTriggerMessage = generateTriggerMessage(opts.teamName, opts.workerName);
   if (usePromptMode) {
     await composeInitialInbox(opts.teamName, opts.workerName, instruction, opts.cwd);
@@ -4350,11 +4349,7 @@ async function spawnV2Worker(opts) {
     model: modelForAgent
   });
   if (usePromptMode) {
-    const promptArgs = getPromptModeArgs(
-      opts.agentType,
-      inboxTriggerMessage
-    );
-    launchArgs.push(...promptArgs);
+    launchArgs.push(...getPromptModeArgs(opts.agentType, instruction));
   }
   const paneConfig = {
     teamName: opts.teamName,
@@ -4420,7 +4415,7 @@ async function spawnV2Worker(opts) {
     };
   }
   if (opts.agentType === "claude") {
-    const settled = await waitForClaudeStartupEvidence(
+    const settled = await waitForWorkerStartupEvidence(
       opts.teamName,
       opts.workerName,
       opts.taskId,
@@ -4435,7 +4430,7 @@ async function spawnV2Worker(opts) {
           startupFailureReason: `${renotified.reason}:startup_evidence_missing`
         };
       }
-      const settledAfterRetry = await waitForClaudeStartupEvidence(
+      const settledAfterRetry = await waitForWorkerStartupEvidence(
         opts.teamName,
         opts.workerName,
         opts.taskId,
@@ -4448,6 +4443,21 @@ async function spawnV2Worker(opts) {
           startupFailureReason: "claude_startup_evidence_missing"
         };
       }
+    }
+  }
+  if (usePromptMode) {
+    const settled = await waitForWorkerStartupEvidence(
+      opts.teamName,
+      opts.workerName,
+      opts.taskId,
+      opts.cwd
+    );
+    if (!settled) {
+      return {
+        paneId,
+        startupAssigned: false,
+        startupFailureReason: `${opts.agentType}_startup_evidence_missing`
+      };
     }
   }
   return {
