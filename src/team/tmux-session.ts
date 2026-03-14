@@ -287,7 +287,6 @@ export function listActiveSessions(teamName: string): string[] {
     // Use shell execution for format strings containing #{} to prevent
     // MSYS2/Git Bash from stripping curly braces in execFileSync args.
     // All arguments here are hardcoded constants, not user input.
-    // eslint-disable-next-line security/detect-child-process -- safe: no user input
     const output = execSync("tmux list-sessions -F '#{session_name}'", {
       encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe']
     }) as string;
