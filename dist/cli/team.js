@@ -23,6 +23,7 @@ const SUPPORTED_API_OPERATIONS = new Set([
     'read-task',
     'read-config',
     'get-summary',
+    'orphan-cleanup',
 ]);
 const TEAM_API_USAGE = `
 Usage:

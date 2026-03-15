@@ -6,6 +6,7 @@
  * Sessions are named "omc-team-{teamName}-{workerName}".
  */
 import { exec, execFile, execSync, execFileSync } from 'child_process';
+import { existsSync } from 'fs';
 import { join, basename, isAbsolute, win32 } from 'path';
 import { promisify } from 'util';
 import fs from 'fs/promises';
@@ -39,6 +40,62 @@ export function getDefaultShell() {
         return process.env.COMSPEC || 'cmd.exe';
     }
     return process.env.SHELL || '/bin/bash';
+}
+const ZSH_CANDIDATES = ['/bin/zsh', '/usr/bin/zsh', '/usr/local/bin/zsh', '/opt/homebrew/bin/zsh'];
+const BASH_CANDIDATES = ['/bin/bash', '/usr/bin/bash'];
+/** Try a list of shell paths; return first that exists with its rcFile, or null */
+export function resolveShellFromCandidates(paths, rcFile) {
+    for (const p of paths) {
+        if (existsSync(p))
+            return { shell: p, rcFile };
+    }
+    return null;
+}
+/** Check if shellPath is a supported shell (zsh/bash) that exists on disk */
+export function resolveSupportedShellAffinity(shellPath) {
+    if (!shellPath)
+        return null;
+    const name = basename(shellPath.replace(/\\/g, '/')).replace(/\.(exe|cmd|bat)$/i, '');
+    if (name !== 'zsh' && name !== 'bash')
+        return null;
+    if (!existsSync(shellPath))
+        return null;
+    const home = process.env.HOME ?? '';
+    const rcFile = home ? `${home}/.${name}rc` : null;
+    return { shell: shellPath, rcFile };
+}
+/**
+ * Resolve the shell and rc file to use for worker pane launch.
+ *
+ * Priority:
+ *   1. MSYS2/Windows → /bin/sh (no rcFile)
+ *   2. shellPath (from $SHELL) if zsh or bash and binary exists
+ *   3. ZSH candidates
+ *   4. BASH candidates
+ *   5. Fallback: /bin/sh
+ */
+export function buildWorkerLaunchSpec(shellPath) {
+    // MSYS2 / Windows: short-circuit to /bin/sh
+    if (isUnixLikeOnWindows()) {
+        return { shell: '/bin/sh', rcFile: null };
+    }
+    // Try user's preferred shell if it's supported (zsh or bash)
+    const preferred = resolveSupportedShellAffinity(shellPath);
+    if (preferred)
+        return preferred;
+    // Try zsh candidates
+    const home = process.env.HOME ?? '';
+    const zshRc = home ? `${home}/.zshrc` : null;
+    const zsh = resolveShellFromCandidates(ZSH_CANDIDATES, zshRc ?? '');
+    if (zsh)
+        return { shell: zsh.shell, rcFile: zshRc };
+    // Try bash candidates
+    const bashRc = home ? `${home}/.bashrc` : null;
+    const bash = resolveShellFromCandidates(BASH_CANDIDATES, bashRc ?? '');
+    if (bash)
+        return { shell: bash.shell, rcFile: bashRc };
+    // Final fallback
+    return { shell: '/bin/sh', rcFile: null };
 }
 function escapeForCmdSet(value) {
     return value.replace(/"/g, '""');
@@ -91,6 +148,7 @@ function getLaunchWords(config) {
 }
 export function buildWorkerStartCommand(config) {
     const shell = getDefaultShell();
+    const launchSpec = buildWorkerLaunchSpec(process.env.SHELL);
     const launchWords = getLaunchWords(config);
     const shouldSourceRc = process.env.OMC_TEAM_NO_RC !== '1';
     if (process.platform === 'win32' && !isUnixLikeOnWindows()) {
@@ -114,8 +172,9 @@ export function buildWorkerStartCommand(config) {
         const shellName = shellNameFromPath(shell) || 'bash';
         const isFish = shellName === 'fish';
         const execArgsCommand = isFish ? 'exec $argv' : 'exec "$@"';
-        let rcFile = '';
-        if (process.env.HOME) {
+        // Use rcFile from launchSpec when shell matches; fall back to legacy derivation otherwise
+        let rcFile = (launchSpec.shell === shell ? launchSpec.rcFile : null) ?? '';
+        if (!rcFile && process.env.HOME) {
             rcFile = isFish
                 ? `${process.env.HOME}/.config/fish/config.fish`
                 : `${process.env.HOME}/.${shellName}rc`;
@@ -153,8 +212,9 @@ export function buildWorkerStartCommand(config) {
         .join(' ');
     const shellName = shellNameFromPath(shell) || 'bash';
     const isFish = shellName === 'fish';
-    let rcFile = '';
-    if (process.env.HOME) {
+    // Use rcFile from launchSpec when shell matches; fall back to legacy derivation otherwise
+    let rcFile = (launchSpec.shell === shell ? launchSpec.rcFile : null) ?? '';
+    if (!rcFile && process.env.HOME) {
         rcFile = isFish
             ? `${process.env.HOME}/.config/fish/config.fish`
             : `${process.env.HOME}/.${shellName}rc`;

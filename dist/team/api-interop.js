@@ -6,6 +6,8 @@ import { queueBroadcastMailboxMessage, queueDirectMailboxMessage } from './mcp-c
 import { injectToLeaderPane, sendToWorker } from './tmux-session.js';
 import { listDispatchRequests, markDispatchRequestDelivered, markDispatchRequestNotified } from './dispatch-queue.js';
 import { generateMailboxTriggerMessage } from './worker-bootstrap.js';
+import { resolveLifecycleProfile } from './governance.js';
+import { shutdownTeamV2 } from './runtime-v2.js';
 const TEAM_UPDATE_TASK_MUTABLE_FIELDS = new Set(['subject', 'description', 'blocked_by', 'requires_code_change']);
 const TEAM_UPDATE_TASK_REQUEST_FIELDS = new Set(['team_name', 'task_id', 'workingDirectory', ...TEAM_UPDATE_TASK_MUTABLE_FIELDS]);
 export const LEGACY_TEAM_MCP_TOOLS = [
@@ -67,6 +69,7 @@ export const TEAM_API_OPERATIONS = [
     'write-monitor-snapshot',
     'read-task-approval',
     'write-task-approval',
+    'orphan-cleanup',
 ];
 function isFiniteInteger(value) {
     return typeof value === 'number' && Number.isInteger(value) && Number.isFinite(value);
@@ -169,12 +172,12 @@ function resolveTeamWorkingDirectoryFromMetadata(teamName, candidateCwd, workerC
         if (workerRoot)
             return stateRootToWorkingDirectory(workerRoot);
     }
-    const fromManifest = readTeamStateRootFromFile(join(teamRoot, 'manifest.v2.json'));
-    if (fromManifest)
-        return stateRootToWorkingDirectory(fromManifest);
     const fromConfig = readTeamStateRootFromFile(join(teamRoot, 'config.json'));
     if (fromConfig)
         return stateRootToWorkingDirectory(fromConfig);
+    const fromManifest = readTeamStateRootFromFile(join(teamRoot, 'manifest.v2.json'));
+    if (fromManifest)
+        return stateRootToWorkingDirectory(fromManifest);
     return null;
 }
 function resolveTeamWorkingDirectory(teamName, preferredCwd) {
@@ -660,6 +663,23 @@ export async function executeTeamApiOperation(operation, args, fallbackCwd) {
                     : { ok: false, operation, error: { code: 'team_not_found', message: 'team_not_found' } };
             }
             case 'cleanup': {
+                const teamName = String(args.team_name || '').trim();
+                if (!teamName)
+                    return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };
+                // Lifecycle-aware routing: linked_ralph profile uses graceful shutdown
+                const config = await teamReadConfig(teamName, cwd);
+                const manifest = await teamReadManifest(teamName, cwd);
+                const profile = resolveLifecycleProfile(config, manifest);
+                if (profile === 'linked_ralph') {
+                    await shutdownTeamV2(teamName, cwd);
+                }
+                else {
+                    await teamCleanup(teamName, cwd);
+                }
+                return { ok: true, operation, data: { team_name: teamName } };
+            }
+            case 'orphan-cleanup': {
+                // Destructive escape hatch: always calls teamCleanup directly, bypasses shutdown orchestration
                 const teamName = String(args.team_name || '').trim();
                 if (!teamName)
                     return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };

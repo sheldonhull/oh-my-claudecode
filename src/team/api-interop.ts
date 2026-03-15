@@ -47,6 +47,7 @@ import { injectToLeaderPane, sendToWorker } from './tmux-session.js';
 import { listDispatchRequests, markDispatchRequestDelivered, markDispatchRequestNotified } from './dispatch-queue.js';
 import { generateMailboxTriggerMessage } from './worker-bootstrap.js';
 import { shutdownTeam } from './runtime.js';
+import { resolveLifecycleProfile } from './governance.js';
 import { shutdownTeamV2 } from './runtime-v2.js';
 
 const TEAM_UPDATE_TASK_MUTABLE_FIELDS = new Set(['subject', 'description', 'blocked_by', 'requires_code_change']);
@@ -112,6 +113,7 @@ export const TEAM_API_OPERATIONS = [
   'write-monitor-snapshot',
   'read-task-approval',
   'write-task-approval',
+  'orphan-cleanup',
 ] as const;
 
 export type TeamApiOperation = typeof TEAM_API_OPERATIONS[number];
@@ -270,11 +272,11 @@ function resolveTeamWorkingDirectoryFromMetadata(
     if (workerRoot) return stateRootToWorkingDirectory(workerRoot);
   }
 
-  const fromManifest = readTeamStateRootFromFile(join(teamRoot, 'manifest.v2.json'));
-  if (fromManifest) return stateRootToWorkingDirectory(fromManifest);
-
   const fromConfig = readTeamStateRootFromFile(join(teamRoot, 'config.json'));
   if (fromConfig) return stateRootToWorkingDirectory(fromConfig);
+
+  const fromManifest = readTeamStateRootFromFile(join(teamRoot, 'manifest.v2.json'));
+  if (fromManifest) return stateRootToWorkingDirectory(fromManifest);
 
   return null;
 }
@@ -836,6 +838,13 @@ export async function executeTeamApiOperation(
         const teamName = String(args.team_name || '').trim();
         if (!teamName) return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };
         await executeTeamCleanupViaRuntime(teamName, cwd);
+        return { ok: true, operation, data: { team_name: teamName } };
+      }
+      case 'orphan-cleanup': {
+        // Destructive escape hatch: always calls teamCleanup directly, bypasses shutdown orchestration
+        const teamName = String(args.team_name || '').trim();
+        if (!teamName) return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };
+        await teamCleanup(teamName, cwd);
         return { ok: true, operation, data: { team_name: teamName } };
       }
       case 'write-shutdown-request': {

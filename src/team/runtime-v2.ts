@@ -22,7 +22,8 @@ import { existsSync } from 'fs';
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { performance } from 'perf_hooks';
 import { TeamPaths, absPath, teamStateRoot } from './state-paths.js';
-import { allocateStartupTasks } from './allocation-policy.js';
+import { allocateTasksToWorkers } from './allocation-policy.js';
+import type { TaskAllocationInput, WorkerAllocationInput } from './allocation-policy.js';
 import {
   readTeamConfig,
   readWorkerStatus,
@@ -606,10 +607,40 @@ export async function startTeamV2(config: StartTeamV2Config): Promise<TeamRuntim
     }, null, 2), 'utf-8');
   }
 
-  const startupAllocations = allocateStartupTasks(config.workerCount, config.tasks);
+  // Build allocation inputs for the new role-aware allocator
+  const workerNames = Array.from({ length: config.workerCount }, (_, index) => `worker-${index + 1}`);
+  const workerNameSet = new Set(workerNames);
+
+  // Respect explicit owner fields first, then allocate remaining tasks
+  const startupAllocations: Array<{ workerName: string; taskIndex: number }> = [];
+  const unownedTaskIndices: number[] = [];
+  for (let i = 0; i < config.tasks.length; i++) {
+    const owner = config.tasks[i]?.owner;
+    if (typeof owner === 'string' && workerNameSet.has(owner)) {
+      startupAllocations.push({ workerName: owner, taskIndex: i });
+    } else {
+      unownedTaskIndices.push(i);
+    }
+  }
+
+  if (unownedTaskIndices.length > 0) {
+    const allocationTasks: TaskAllocationInput[] = unownedTaskIndices.map(idx => ({
+      id: String(idx),
+      subject: config.tasks[idx].subject,
+      description: config.tasks[idx].description,
+    }));
+    const allocationWorkers: WorkerAllocationInput[] = workerNames.map((name, i) => ({
+      name,
+      role: config.workerRoles?.[i]
+        ?? (agentTypes[i % agentTypes.length] ?? agentTypes[0] ?? 'claude') as string,
+      currentLoad: 0,
+    }));
+    for (const r of allocateTasksToWorkers(allocationTasks, allocationWorkers)) {
+      startupAllocations.push({ workerName: r.workerName, taskIndex: Number(r.taskId) });
+    }
+  }
 
   // Set up worker state dirs and overlays (with v2 CLI API instructions)
-  const workerNames = Array.from({ length: config.workerCount }, (_, index) => `worker-${index + 1}`);
   for (let i = 0; i < workerNames.length; i++) {
     const wName = workerNames[i];
     const agentType = (agentTypes[i % agentTypes.length] ?? agentTypes[0] ?? 'claude') as CliAgentType;

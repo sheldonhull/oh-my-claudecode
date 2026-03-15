@@ -503,6 +503,42 @@ async function main() {
     let tracer = null;
     try { tracer = await import('../dist/hooks/subagent-tracker/flow-tracer.js'); } catch { /* silent */ }
 
+    // Import follow-up planner modules (best-effort — requires npm run build)
+    let followupPlanner = null;
+    let planningArtifacts = null;
+    try {
+      followupPlanner = await import('../dist/team/followup-planner.js');
+      planningArtifacts = await import('../dist/planning/artifacts.js');
+    } catch { /* silent — dist/ may not exist yet */ }
+
+    // Check for approved follow-up shortcut: bypass ralplan gate when a prior ralplan
+    // cycle completed and left an approved plan with a launch hint.
+    if (followupPlanner && planningArtifacts) {
+      // Detect if ralplan state exists (was recently active) — serves as "prior skill = ralplan" signal
+      const ralplanStatePath = sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)
+        ? join(directory, '.omc', 'state', 'sessions', sessionId, 'ralplan-state.json')
+        : join(directory, '.omc', 'state', 'ralplan-state.json');
+      const ralplanWasActive = existsSync(ralplanStatePath);
+
+      if (ralplanWasActive) {
+        const artifacts = planningArtifacts.readPlanningArtifacts(directory);
+        const planningComplete = planningArtifacts.isPlanningComplete(artifacts);
+        const context = { planningComplete, priorSkill: 'ralplan' };
+
+        const isTeamFollowup = followupPlanner.isApprovedExecutionFollowupShortcut('team', prompt, context);
+        const isRalphFollowup = followupPlanner.isApprovedExecutionFollowupShortcut('ralph', prompt, context);
+
+        if (isTeamFollowup) {
+          console.log(JSON.stringify(createHookOutput(createSkillInvocation('team', prompt))));
+          return;
+        }
+        if (isRalphFollowup) {
+          console.log(JSON.stringify(createHookOutput(createSkillInvocation('ralph', prompt))));
+          return;
+        }
+      }
+    }
+
     // Record detected keywords to flow trace
     if (tracer) {
       for (const match of resolved) {

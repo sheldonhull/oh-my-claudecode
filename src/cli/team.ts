@@ -25,6 +25,7 @@ const SUPPORTED_API_OPERATIONS = new Set([
   'read-task',
   'read-config',
   'get-summary',
+  'orphan-cleanup',
 ] as const);
 const TEAM_API_USAGE = `
 Usage:
@@ -43,7 +44,8 @@ type SupportedApiOperation =
   | 'list-tasks'
   | 'read-task'
   | 'read-config'
-  | 'get-summary';
+  | 'get-summary'
+  | 'orphan-cleanup';
 
 interface TeamApiEnvelope {
   ok: boolean;
