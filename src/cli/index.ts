@@ -45,6 +45,7 @@ import {
 import { doctorConflictsCommand } from './commands/doctor-conflicts.js';
 import { sessionSearchCommand } from './commands/session-search.js';
 import { teamCommand } from './commands/team.js';
+import { ralphthonCommand } from './commands/ralphthon.js';
 import {
   teleportCommand,
   teleportListCommand,
@@ -1345,6 +1346,23 @@ program
   .argument('[args...]', 'autoresearch subcommand arguments')
   .action(async (args: string[]) => {
     await autoresearchCommand(args);
+  });
+
+/**
+ * Ralphthon command - Autonomous hackathon lifecycle
+ *
+ * Deep-interview generates PRD, ralph loop executes tasks,
+ * auto-hardening phase, terminates after clean waves.
+ */
+program
+  .command('ralphthon')
+  .description('Autonomous hackathon lifecycle: interview -> execute -> harden -> done')
+  .helpOption(false)
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .argument('[args...]', 'ralphthon arguments')
+  .action(async (args: string[]) => {
+    await ralphthonCommand(args);
   });
 
 // Parse arguments
