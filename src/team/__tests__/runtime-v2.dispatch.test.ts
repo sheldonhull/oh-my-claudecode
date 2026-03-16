@@ -32,6 +32,7 @@ vi.mock('../model-contract.js', () => ({
   getWorkerEnv: modelContractMocks.getWorkerEnv,
   isPromptModeAgent: modelContractMocks.isPromptModeAgent,
   getPromptModeArgs: modelContractMocks.getPromptModeArgs,
+  resolveClaudeWorkerModel: vi.fn(() => undefined),
 }));
 
 vi.mock('../tmux-session.js', () => ({

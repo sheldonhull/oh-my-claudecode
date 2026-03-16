@@ -58,6 +58,7 @@ import type { CliAgentType } from './model-contract.js';
 import {
   buildWorkerArgv, resolveValidatedBinaryPath,
   getWorkerEnv as getModelWorkerEnv, isPromptModeAgent, getPromptModeArgs,
+  resolveClaudeWorkerModel,
 } from './model-contract.js';
 import {
   createTeamSession, spawnWorkerInPane, sendToWorker,
@@ -416,7 +417,9 @@ async function spawnV2Worker(opts: SpawnV2WorkerOptions): Promise<SpawnV2WorkerR
   const resolvedBinaryPath = opts.resolvedBinaryPaths[opts.agentType]
     ?? resolveValidatedBinaryPath(opts.agentType);
 
-  // Resolve model from environment variables
+  // Resolve model from environment variables.
+  // For Claude agents on Bedrock/Vertex, resolve the provider-specific model
+  // so workers don't fall back to invalid Anthropic API model names. (#1695)
   const modelForAgent = (() => {
     if (opts.agentType === 'codex') {
       return process.env.OMC_EXTERNAL_MODELS_DEFAULT_CODEX_MODEL
@@ -428,7 +431,8 @@ async function spawnV2Worker(opts: SpawnV2WorkerOptions): Promise<SpawnV2WorkerR
         || process.env.OMC_GEMINI_DEFAULT_MODEL
         || undefined;
     }
-    return undefined;
+    // Claude agents: resolve Bedrock/Vertex model when on those providers
+    return resolveClaudeWorkerModel();
   })();
 
   const [launchBinary, ...launchArgs] = buildWorkerArgv(opts.agentType, {
