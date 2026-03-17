@@ -78,7 +78,7 @@ describe('parseAutoresearchArgs', () => {
   it('parses --help', () => {
     const parsed = parseAutoresearchArgs(['--help']);
     expect(parsed.missionDir).toBe('--help');
-    expect(AUTORESEARCH_HELP).toMatch(/research interview \+ background launch/);
+    expect(AUTORESEARCH_HELP).toMatch(/research interview \\+ background launch/);
     expect(AUTORESEARCH_HELP).toMatch(/Partial bypass is invalid/);
   });
 

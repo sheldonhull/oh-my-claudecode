@@ -1,13 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parseSandboxContract } from '../../autoresearch/contracts.js';
 
-const tmuxAvailableMock = vi.fn();
-const buildTmuxShellCommandMock = vi.fn((cmd: string, args: string[]) => `${cmd} ${args.join(' ')}`);
-const wrapWithLoginShellMock = vi.fn((cmd: string) => `wrapped:${cmd}`);
+const { tmuxAvailableMock, buildTmuxShellCommandMock, wrapWithLoginShellMock } = vi.hoisted(() => ({
+  tmuxAvailableMock: vi.fn(),
+  buildTmuxShellCommandMock: vi.fn((cmd: string, args: string[]) => `${cmd} ${args.join(' ')}`),
+  wrapWithLoginShellMock: vi.fn((cmd: string) => `wrapped:${cmd}`),
+}));
 
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>();
@@ -216,10 +218,6 @@ describe('spawnAutoresearchTmux', () => {
     logSpy.mockClear();
   });
 
-  afterEach(() => {
-    delete process.env.SHELL;
-  });
-
   afterAll(() => {
     logSpy.mockRestore();
   });
@@ -243,9 +241,14 @@ describe('spawnAutoresearchTmux', () => {
 
   it('uses explicit cwd, login-shell wrapping, and verifies startup before logging success', () => {
     tmuxAvailableMock.mockReturnValue(true);
+    let hasSessionCalls = 0;
     vi.mocked(execFileSync).mockImplementation((cmd, args, opts) => {
-      if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'has-session' && (opts as { stdio?: string })?.stdio === 'ignore') {
-        throw new Error('missing session');
+      if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'has-session') {
+        hasSessionCalls += 1;
+        if (hasSessionCalls === 1) {
+          throw new Error('missing session');
+        }
+        return Buffer.from('');
       }
       if (cmd === 'git') {
         expect(args).toEqual(['rev-parse', '--show-toplevel']);
@@ -253,10 +256,7 @@ describe('spawnAutoresearchTmux', () => {
         return '/repo\n';
       }
       if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'new-session') {
-        expect(args).toEqual(['new-session', '-d', '-s', 'omc-autoresearch-demo', '-c', '/repo', 'wrapped:' + `node /repo/bin/omc.js autoresearch /repo/missions/demo`]);
-        return Buffer.from('');
-      }
-      if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'has-session') {
+        expect(args).toEqual(['new-session', '-d', '-s', 'omc-autoresearch-demo', '-c', '/repo', 'wrapped:' + 'node /repo/bin/omc.js autoresearch /repo/missions/demo']);
         return Buffer.from('');
       }
       throw new Error(`unexpected call: ${String(cmd)}`);
@@ -265,26 +265,24 @@ describe('spawnAutoresearchTmux', () => {
     spawnAutoresearchTmux('/repo/missions/demo', 'demo');
 
     expect(buildTmuxShellCommandMock).toHaveBeenCalledWith(process.execPath, [expect.stringMatching(/bin\/omc\.js$/), 'autoresearch', '/repo/missions/demo']);
-    expect(wrapWithLoginShellMock).toHaveBeenCalledWith(`node /repo/bin/omc.js autoresearch /repo/missions/demo`);
+    expect(wrapWithLoginShellMock).toHaveBeenCalledWith('node /repo/bin/omc.js autoresearch /repo/missions/demo');
     expect(logSpy).toHaveBeenCalledWith('\nAutoresearch launched in background tmux session.');
     expect(logSpy).toHaveBeenCalledWith('  Attach:   tmux attach -t omc-autoresearch-demo');
   });
 
   it('throws if startup verification fails after creating the session', () => {
     tmuxAvailableMock.mockReturnValue(true);
-    let hasSessionCalls = 0;
     vi.mocked(execFileSync).mockImplementation((cmd, args) => {
-      if (cmd === 'git') return '/repo\n';
       if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'has-session') {
-        hasSessionCalls += 1;
-        if (hasSessionCalls <= 2) {
-          throw new Error('missing session');
-        }
+        throw new Error('missing session');
+      }
+      if (cmd === 'git') {
+        return '/repo\n';
       }
       if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'new-session') {
         return Buffer.from('');
       }
-      return Buffer.from('');
+      throw new Error(`unexpected call: ${String(cmd)}`);
     });
 
     expect(() => spawnAutoresearchTmux('/repo/missions/demo', 'demo')).toThrow(/did not stay available after launch/);
