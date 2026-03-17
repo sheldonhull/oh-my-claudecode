@@ -1,9 +1,14 @@
 import { execFileSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, lstatSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import { join, relative, resolve, sep } from 'path';
+import { homedir } from 'os';
 import { createInterface } from 'readline/promises';
 import { type AutoresearchKeepPolicy, parseSandboxContract, slugifyMissionName } from '../autoresearch/contracts.js';
+import {
+  AUTORESEARCH_SETUP_CONFIDENCE_THRESHOLD,
+  type AutoresearchSetupHandoff,
+} from '../autoresearch/setup-contract.js';
 import {
   buildMissionContent,
   buildSandboxContent,
@@ -12,7 +17,14 @@ import {
   isLaunchReadyEvaluatorCommand,
   writeAutoresearchDeepInterviewArtifacts,
 } from './autoresearch-intake.js';
-import { buildTmuxShellCommand, isTmuxAvailable, wrapWithLoginShell } from './tmux-utils.js';
+import {
+  runAutoresearchSetupSession,
+  type AutoresearchSetupSessionInput,
+} from './autoresearch-setup-session.js';
+import { buildTmuxShellCommand, isTmuxAvailable, quoteShellArg, wrapWithLoginShell } from './tmux-utils.js';
+
+const CLAUDE_BYPASS_FLAG = '--dangerously-skip-permissions';
+const AUTORESEARCH_SETUP_SLASH_COMMAND = '/deep-interview --autoresearch';
 
 export interface InitAutoresearchOptions {
   topic: string;
@@ -32,6 +44,13 @@ export interface AutoresearchQuestionIO {
   close(): void;
 }
 
+export interface GuidedAutoresearchSetupDeps {
+  createPromptInterface?: typeof createInterface;
+  runSetupSession?: (input: AutoresearchSetupSessionInput) => AutoresearchSetupHandoff;
+}
+
+type QuestionInterface = { question(prompt: string): Promise<string>; close(): void };
+
 function createQuestionIO(): AutoresearchQuestionIO {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return {
@@ -42,6 +61,10 @@ function createQuestionIO(): AutoresearchQuestionIO {
       rl.close();
     },
   };
+}
+
+async function askQuestion(rl: QuestionInterface, prompt: string): Promise<string> {
+  return (await rl.question(prompt)).trim();
 }
 
 async function promptWithDefault(io: AutoresearchQuestionIO, prompt: string, currentValue?: string): Promise<string> {
@@ -110,7 +133,7 @@ export function parseInitArgs(args: readonly string[]): Partial<InitAutoresearch
     if ((arg === '--topic') && next) {
       result.topic = next;
       i++;
-    } else if ((arg === '--evaluator') && next) {
+    } else if ((arg === '--evaluator' || arg === '--eval') && next) {
       result.evaluatorCommand = next;
       i++;
     } else if ((arg === '--keep-policy') && next) {
@@ -125,8 +148,10 @@ export function parseInitArgs(args: readonly string[]): Partial<InitAutoresearch
       i++;
     } else if (arg.startsWith('--topic=')) {
       result.topic = arg.slice('--topic='.length);
-    } else if (arg.startsWith('--evaluator=')) {
-      result.evaluatorCommand = arg.slice('--evaluator='.length);
+    } else if (arg.startsWith('--evaluator=') || arg.startsWith('--eval=')) {
+      result.evaluatorCommand = arg.startsWith('--evaluator=')
+        ? arg.slice('--evaluator='.length)
+        : arg.slice('--eval='.length);
     } else if (arg.startsWith('--keep-policy=')) {
       const normalized = arg.slice('--keep-policy='.length).trim().toLowerCase();
       if (normalized !== 'pass_only' && normalized !== 'score_improvement') {
@@ -208,6 +233,74 @@ export async function guidedAutoresearchSetup(
   return runAutoresearchNoviceBridge(repoRoot, seedInputs, io);
 }
 
+export async function guidedAutoresearchSetupInference(
+  repoRoot: string,
+  deps: GuidedAutoresearchSetupDeps = {},
+): Promise<InitAutoresearchResult> {
+  if (!process.stdin.isTTY) {
+    throw new Error('Guided setup requires an interactive terminal. Use --mission, --eval/--sandbox, --keep-policy, and --slug flags for non-interactive use.');
+  }
+
+  const makeInterface = deps.createPromptInterface ?? createInterface;
+  const runSetupSession = deps.runSetupSession ?? runAutoresearchSetupSession;
+  const rl = makeInterface({ input: process.stdin, output: process.stdout }) as QuestionInterface;
+
+  try {
+    const topic = await askQuestion(rl, 'What should autoresearch improve or prove for this repo?\n> ');
+    if (!topic) {
+      throw new Error('Research mission is required.');
+    }
+
+    const explicitEvaluator = await askQuestion(
+      rl,
+      '\nOptional evaluator command (leave blank and OMC will infer one if confidence is high)\n> ',
+    );
+
+    const clarificationAnswers: string[] = [];
+    let handoff: AutoresearchSetupHandoff | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      handoff = runSetupSession({
+        repoRoot,
+        missionText: topic,
+        ...(explicitEvaluator ? { explicitEvaluatorCommand: explicitEvaluator } : {}),
+        clarificationAnswers,
+      });
+
+      if (handoff.readyToLaunch) {
+        break;
+      }
+
+      const question = handoff.clarificationQuestion
+        ?? 'I need one more detail before launch. What should the evaluator command verify?';
+      const answer = await askQuestion(rl, `\n${question}\n> `);
+      if (!answer) {
+        throw new Error('Autoresearch setup requires clarification before launch.');
+      }
+      clarificationAnswers.push(answer);
+    }
+
+    if (!handoff || !handoff.readyToLaunch) {
+      throw new Error(
+        `Autoresearch setup could not infer a launch-ready evaluator with confidence >= ${AUTORESEARCH_SETUP_CONFIDENCE_THRESHOLD}.`,
+      );
+    }
+
+    process.stdout.write(
+      `\nSetup summary\n- mission: ${handoff.missionText}\n- evaluator: ${handoff.evaluatorCommand}\n- confidence: ${handoff.confidence}\n`,
+    );
+
+    return initAutoresearchMission({
+      topic: handoff.missionText,
+      evaluatorCommand: handoff.evaluatorCommand,
+      keepPolicy: handoff.keepPolicy,
+      slug: handoff.slug || slugifyMissionName(handoff.missionText),
+      repoRoot,
+    });
+  } finally {
+    rl.close();
+  }
+}
+
 export function checkTmuxAvailable(): boolean {
   return isTmuxAvailable();
 }
@@ -233,7 +326,7 @@ function assertTmuxSessionAvailable(sessionName: string): void {
 
 export function spawnAutoresearchTmux(missionDir: string, slug: string): void {
   if (!checkTmuxAvailable()) {
-    throw new Error('tmux is required for detached background autoresearch execution. Install tmux or run `omc autoresearch <mission-dir>` directly.');
+    throw new Error('tmux is required for background autoresearch execution. Install tmux and try again.');
   }
 
   const sessionName = `omc-autoresearch-${slug}`;
@@ -260,8 +353,78 @@ export function spawnAutoresearchTmux(missionDir: string, slug: string): void {
   execFileSync('tmux', ['new-session', '-d', '-s', sessionName, '-c', repoRoot, wrappedCommand], { stdio: 'ignore' });
   assertTmuxSessionAvailable(sessionName);
 
-  console.log('\nAutoresearch launched in background.');
+  console.log('\nAutoresearch launched in background tmux session.');
   console.log(`  Session:  ${sessionName}`);
   console.log(`  Mission:  ${missionDir}`);
   console.log(`  Attach:   tmux attach -t ${sessionName}`);
 }
+
+function ensureSymlink(target: string, linkPath: string): void {
+  try {
+    const existing = lstatSync(linkPath);
+    if (existing.isSymbolicLink()) {
+      return;
+    }
+    unlinkSync(linkPath);
+  } catch {
+    // missing path is fine
+  }
+  symlinkSync(target, linkPath, 'dir');
+}
+
+export function prepareAutoresearchSetupCodexHome(repoRoot: string, sessionName: string): string {
+  const baseCodexHome = process.env.CODEX_HOME?.trim() || join(homedir(), '.codex');
+  const tempCodexHome = join(repoRoot, '.omx', 'tmp', sessionName, 'codex-home');
+
+  mkdirSync(tempCodexHome, { recursive: true });
+
+  for (const dirName of ['skills', 'commands']) {
+    const sourceDir = join(baseCodexHome, dirName);
+    if (existsSync(sourceDir)) {
+      ensureSymlink(sourceDir, join(tempCodexHome, dirName));
+    }
+  }
+
+  writeFileSync(
+    join(tempCodexHome, '.omx-config.json'),
+    `${JSON.stringify({ autoNudge: { enabled: false } }, null, 2)}\n`,
+    'utf-8',
+  );
+
+  return tempCodexHome;
+}
+
+export function buildAutoresearchSetupSlashCommand(): string {
+  return AUTORESEARCH_SETUP_SLASH_COMMAND;
+}
+
+export function spawnAutoresearchSetupTmux(repoRoot: string): void {
+  if (!checkTmuxAvailable()) {
+    throw new Error('tmux is required for autoresearch setup. Install tmux and try again.');
+  }
+
+  const sessionName = `omc-autoresearch-setup-${Date.now().toString(36)}`;
+  const codexHome = prepareAutoresearchSetupCodexHome(repoRoot, sessionName);
+  const claudeCommand = buildTmuxShellCommand('env', [`CODEX_HOME=${codexHome}`, 'claude', CLAUDE_BYPASS_FLAG]);
+  const wrappedClaudeCommand = wrapWithLoginShell(claudeCommand);
+  const paneId = execFileSync(
+    'tmux',
+    ['new-session', '-d', '-P', '-F', '#{pane_id}', '-s', sessionName, '-c', repoRoot, wrappedClaudeCommand],
+    { encoding: 'utf-8' },
+  ).trim();
+
+  assertTmuxSessionAvailable(sessionName);
+
+  if (paneId) {
+    execFileSync('tmux', ['send-keys', '-t', paneId, '-l', buildAutoresearchSetupSlashCommand()], { stdio: 'ignore' });
+    execFileSync('tmux', ['send-keys', '-t', paneId, 'Enter'], { stdio: 'ignore' });
+  }
+
+  console.log('\nAutoresearch setup launched in background Claude session.');
+  console.log(`  Session:  ${sessionName}`);
+  console.log(`  Starter:  ${buildAutoresearchSetupSlashCommand()}`);
+  console.log(`  CODEX_HOME: ${quoteShellArg(codexHome)}`);
+  console.log(`  Attach:   tmux attach -t ${sessionName}`);
+}
+
+export { buildAutoresearchSetupPrompt } from './autoresearch-setup-session.js';

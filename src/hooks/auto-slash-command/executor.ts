@@ -236,11 +236,51 @@ function resolveArguments(content: string, args: string): string {
   return content.replace(/\$ARGUMENTS/g, args || '(no arguments provided)');
 }
 
+function hasInvocationFlag(args: string, flag: string): boolean {
+  const escaped = flag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|\\s)${escaped}(?=\\s|$)`).test(args);
+}
+
+function stripInvocationFlag(args: string, flag: string): string {
+  const escaped = flag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return args
+    .replace(new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, 'g'), ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function renderDeepInterviewAutoresearchGuidance(args: string): string {
+  const missionSeed = stripInvocationFlag(args, '--autoresearch');
+  const lines = [
+    '## Autoresearch Setup Mode',
+    'This deep-interview invocation was launched as the zero-learning-curve setup lane for `omc autoresearch`.',
+    '',
+    'Required behavior in this mode:',
+    '- If the mission is not already clear, start by asking: "What should autoresearch improve or prove for this repo?"',
+    '- Treat evaluator clarity as a required readiness gate before launch.',
+    '- When the mission and evaluator are ready, launch direct execution with:',
+    '  `omc autoresearch --mission "<mission>" --eval "<evaluator>" [--keep-policy <policy>] [--slug <slug>]`',
+    '- Do **not** hand off to `omc-plan`, `autopilot`, `ralph`, or `team` in this mode.',
+  ];
+
+  if (missionSeed) {
+    lines.push('', `Mission seed from invocation: \`${missionSeed}\``);
+  }
+
+  return lines.join('\n');
+}
+
 /**
  * Format command template with metadata header
  */
 function formatCommandTemplate(cmd: CommandInfo, args: string): string {
   const sections: string[] = [];
+  const isDeepInterviewAutoresearch = cmd.scope === 'skill'
+    && cmd.metadata.name.toLowerCase() === 'deep-interview'
+    && hasInvocationFlag(args, '--autoresearch');
+  const displayArgs = isDeepInterviewAutoresearch
+    ? stripInvocationFlag(args, '--autoresearch')
+    : args;
 
   sections.push(`<command-name>/${cmd.name}</command-name>\n`);
 
@@ -248,8 +288,8 @@ function formatCommandTemplate(cmd: CommandInfo, args: string): string {
     sections.push(`**Description**: ${cmd.metadata.description}\n`);
   }
 
-  if (args) {
-    sections.push(`**Arguments**: ${args}\n`);
+  if (displayArgs) {
+    sections.push(`**Arguments**: ${displayArgs}\n`);
   }
 
   if (cmd.metadata.model) {
@@ -271,27 +311,30 @@ function formatCommandTemplate(cmd: CommandInfo, args: string): string {
   sections.push('---\n');
 
   // Resolve arguments in content, then execute any live-data commands
-  const resolvedContent = resolveArguments(cmd.content || '', args);
+  const resolvedContent = resolveArguments(cmd.content || '', displayArgs);
   const injectedContent = resolveLiveData(resolvedContent);
-  const runtimeGuidance = cmd.scope === 'skill'
+  const runtimeGuidance = cmd.scope === 'skill' && !isDeepInterviewAutoresearch
     ? renderSkillRuntimeGuidance(cmd.metadata.name)
     : '';
-  const pipelineGuidance = cmd.scope === 'skill'
+  const pipelineGuidance = cmd.scope === 'skill' && !isDeepInterviewAutoresearch
     ? renderSkillPipelineGuidance(cmd.metadata.name, cmd.metadata.pipeline)
     : '';
   const resourceGuidance = cmd.scope === 'skill' && cmd.path
     ? renderSkillResourcesGuidance(cmd.path)
     : '';
+  const invocationGuidance = isDeepInterviewAutoresearch
+    ? renderDeepInterviewAutoresearchGuidance(args)
+    : '';
   sections.push(
-    [injectedContent.trim(), runtimeGuidance, pipelineGuidance, resourceGuidance]
+    [injectedContent.trim(), invocationGuidance, runtimeGuidance, pipelineGuidance, resourceGuidance]
       .filter((section) => section.trim().length > 0)
       .join('\n\n')
   );
 
-  if (args && !cmd.content?.includes('$ARGUMENTS')) {
+  if (displayArgs && !cmd.content?.includes('$ARGUMENTS')) {
     sections.push('\n\n---\n');
     sections.push('## User Request\n');
-    sections.push(args);
+    sections.push(displayArgs);
   }
 
   return sections.join('\n');

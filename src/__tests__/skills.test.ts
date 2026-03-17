@@ -182,6 +182,9 @@ describe('Builtin Skills', () => {
       expect(skill?.template).toContain('Skill("oh-my-claudecode:omc-plan")');
       expect(skill?.template).toContain('`--consensus --direct`');
       expect(skill?.template).toContain('`.omc/specs/deep-interview-{slug}.md`');
+      expect(skill?.argumentHint).toContain('--autoresearch');
+      expect(skill?.template).toContain('zero-learning-curve setup lane for `omc autoresearch`');
+      expect(skill?.template).toContain('omc autoresearch --mission "<mission>" --eval "<evaluator>"');
     });
 
     it('should expose pipeline metadata for omc-plan handoff into autopilot', () => {
