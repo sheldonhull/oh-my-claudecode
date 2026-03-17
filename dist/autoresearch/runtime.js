@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir, readFile, symlink, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 import { readModeState, writeModeState, } from '../lib/mode-state-io.js';
 import { parseEvaluatorResult, } from './contracts.js';
 const AUTORESEARCH_RESULTS_HEADER = 'iteration\tcommit\tpass\tscore\tstatus\tdescription\n';
@@ -120,8 +120,14 @@ function isAllowedRuntimeDirtyPath(path) {
         : path === exclude);
 }
 function allowedBootstrapDirtyPaths(worktreePath, allowedDirtyPaths = []) {
+    const normalizedWorktreePath = resolve(worktreePath);
     return new Set(allowedDirtyPaths
-        .map((path) => path.startsWith(worktreePath) ? path.slice(worktreePath.length + 1) : null)
+        .map((path) => {
+        const normalizedPath = resolve(path);
+        return normalizedPath.startsWith(`${normalizedWorktreePath}/`)
+            ? normalizedPath.slice(normalizedWorktreePath.length + 1)
+            : null;
+    })
         .filter((path) => Boolean(path)));
 }
 function isAllowedRuntimeDirtyLine(line, allowedBootstrapPaths) {
