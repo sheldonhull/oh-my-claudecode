@@ -256,7 +256,8 @@ describe('spawnAutoresearchTmux', () => {
         return '/repo\n';
       }
       if (cmd === 'tmux' && Array.isArray(args) && args[0] === 'new-session') {
-        expect(args).toEqual(['new-session', '-d', '-s', 'omc-autoresearch-demo', '-c', '/repo', 'wrapped:' + 'node /repo/bin/omc.js autoresearch /repo/missions/demo']);
+        expect(args.slice(0, 6)).toEqual(['new-session', '-d', '-s', 'omc-autoresearch-demo', '-c', '/repo']);
+        expect(args[6]).toBe('wrapped:' + `${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`);
         return Buffer.from('');
       }
       throw new Error(`unexpected call: ${String(cmd)}`);
@@ -265,7 +266,7 @@ describe('spawnAutoresearchTmux', () => {
     spawnAutoresearchTmux('/repo/missions/demo', 'demo');
 
     expect(buildTmuxShellCommandMock).toHaveBeenCalledWith(process.execPath, [expect.stringMatching(/bin\/omc\.js$/), 'autoresearch', '/repo/missions/demo']);
-    expect(wrapWithLoginShellMock).toHaveBeenCalledWith('node /repo/bin/omc.js autoresearch /repo/missions/demo');
+    expect(wrapWithLoginShellMock).toHaveBeenCalledWith(`${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`);
     expect(logSpy).toHaveBeenCalledWith('\nAutoresearch launched in background tmux session.');
     expect(logSpy).toHaveBeenCalledWith('  Attach:   tmux attach -t omc-autoresearch-demo');
   });
