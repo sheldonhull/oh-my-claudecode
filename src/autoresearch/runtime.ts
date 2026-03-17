@@ -5,7 +5,6 @@ import { dirname, join } from 'path';
 import {
   readModeState,
   writeModeState,
-  clearModeStateFile,
 } from '../lib/mode-state-io.js';
 import {
   parseEvaluatorResult,
