@@ -34,9 +34,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../launch-feat-refactor-skills/node_modules/commander/lib/error.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/error.js
 var require_error = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/lib/error.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/error.js"(exports2) {
     var CommanderError2 = class extends Error {
       /**
        * Constructs the CommanderError class
@@ -69,9 +69,9 @@ var require_error = __commonJS({
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/lib/argument.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/argument.js
 var require_argument = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/lib/argument.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/argument.js"(exports2) {
     var { InvalidArgumentError: InvalidArgumentError2 } = require_error();
     var Argument2 = class {
       /**
@@ -196,9 +196,9 @@ var require_argument = __commonJS({
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/lib/help.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/help.js
 var require_help = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/lib/help.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/help.js"(exports2) {
     var { humanReadableArgName } = require_argument();
     var Help2 = class {
       constructor() {
@@ -610,9 +610,9 @@ var require_help = __commonJS({
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/lib/option.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/option.js
 var require_option = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/lib/option.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/option.js"(exports2) {
     var { InvalidArgumentError: InvalidArgumentError2 } = require_error();
     var Option2 = class {
       /**
@@ -882,9 +882,9 @@ var require_option = __commonJS({
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/lib/suggestSimilar.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/suggestSimilar.js
 var require_suggestSimilar = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/lib/suggestSimilar.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/suggestSimilar.js"(exports2) {
     var maxDistance = 3;
     function editDistance(a, b) {
       if (Math.abs(a.length - b.length) > maxDistance)
@@ -962,9 +962,9 @@ var require_suggestSimilar = __commonJS({
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/lib/command.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/command.js
 var require_command = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/lib/command.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/lib/command.js"(exports2) {
     var EventEmitter = require("node:events").EventEmitter;
     var childProcess = require("node:child_process");
     var path20 = require("node:path");
@@ -3005,9 +3005,9 @@ Expecting one of '${allowedValues.join("', '")}'`);
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/index.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/index.js
 var require_commander = __commonJS({
-  "../launch-feat-refactor-skills/node_modules/commander/index.js"(exports2) {
+  "../../../../../../launch-feat-refactor-skills/node_modules/commander/index.js"(exports2) {
     var { Argument: Argument2 } = require_argument();
     var { Command: Command2 } = require_command();
     var { CommanderError: CommanderError2, InvalidArgumentError: InvalidArgumentError2 } = require_error();
@@ -30979,7 +30979,7 @@ var init_hud = __esm({
   }
 });
 
-// ../launch-feat-refactor-skills/node_modules/commander/esm.mjs
+// ../../../../../../launch-feat-refactor-skills/node_modules/commander/esm.mjs
 var import_index = __toESM(require_commander(), 1);
 var {
   program,
@@ -30996,7 +30996,7 @@ var {
   Help
 } = import_index.default;
 
-// ../launch-feat-refactor-skills/node_modules/chalk/source/vendor/ansi-styles/index.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/chalk/source/vendor/ansi-styles/index.js
 var ANSI_BACKGROUND_OFFSET = 10;
 var wrapAnsi16 = (offset = 0) => (code) => `\x1B[${code + offset}m`;
 var wrapAnsi256 = (offset = 0) => (code) => `\x1B[${38 + offset};5;${code}m`;
@@ -31182,7 +31182,7 @@ function assembleStyles() {
 var ansiStyles = assembleStyles();
 var ansi_styles_default = ansiStyles;
 
-// ../launch-feat-refactor-skills/node_modules/chalk/source/vendor/supports-color/index.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/chalk/source/vendor/supports-color/index.js
 var import_node_process = __toESM(require("node:process"), 1);
 var import_node_os = __toESM(require("node:os"), 1);
 var import_node_tty = __toESM(require("node:tty"), 1);
@@ -31314,7 +31314,7 @@ var supportsColor = {
 };
 var supports_color_default = supportsColor;
 
-// ../launch-feat-refactor-skills/node_modules/chalk/source/utilities.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/chalk/source/utilities.js
 function stringReplaceAll(string3, substring, replacer) {
   let index = string3.indexOf(substring);
   if (index === -1) {
@@ -31344,7 +31344,7 @@ function stringEncaseCRLFWithFirstIndex(string3, prefix, postfix, index) {
   return returnValue;
 }
 
-// ../launch-feat-refactor-skills/node_modules/chalk/source/index.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/chalk/source/index.js
 var { stdout: stdoutColor, stderr: stderrColor } = supports_color_default;
 var GENERATOR = /* @__PURE__ */ Symbol("GENERATOR");
 var STYLER = /* @__PURE__ */ Symbol("STYLER");
@@ -31553,7 +31553,7 @@ function toSdkMcpFormat(servers) {
   return result;
 }
 
-// ../launch-feat-refactor-skills/node_modules/@anthropic-ai/claude-agent-sdk/sdk.mjs
+// ../../../../../../launch-feat-refactor-skills/node_modules/@anthropic-ai/claude-agent-sdk/sdk.mjs
 var import_path4 = require("path");
 var import_url2 = require("url");
 var import_events = require("events");
@@ -51172,7 +51172,7 @@ function createSdkMcpServer(options) {
   };
 }
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/external.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/external.js
 var external_exports = {};
 __export(external_exports, {
   BRAND: () => BRAND,
@@ -51284,7 +51284,7 @@ __export(external_exports, {
   void: () => voidType2
 });
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/helpers/util.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/helpers/util.js
 var util2;
 (function(util3) {
   util3.assertEqual = (_) => {
@@ -51418,7 +51418,7 @@ var getParsedType3 = (data) => {
   }
 };
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/ZodError.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/ZodError.js
 var ZodIssueCode2 = util2.arrayToEnum([
   "invalid_type",
   "invalid_literal",
@@ -51536,7 +51536,7 @@ ZodError3.create = (issues) => {
   return error2;
 };
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/locales/en.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/locales/en.js
 var errorMap2 = (issue2, _ctx) => {
   let message;
   switch (issue2.code) {
@@ -51639,7 +51639,7 @@ var errorMap2 = (issue2, _ctx) => {
 };
 var en_default3 = errorMap2;
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/errors.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/errors.js
 var overrideErrorMap2 = en_default3;
 function setErrorMap(map) {
   overrideErrorMap2 = map;
@@ -51648,7 +51648,7 @@ function getErrorMap2() {
   return overrideErrorMap2;
 }
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/helpers/parseUtil.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue2 = (params) => {
   const { data, path: path20, errorMaps, issueData } = params;
   const fullPath = [...path20, ...issueData.path || []];
@@ -51758,14 +51758,14 @@ var isDirty2 = (x) => x.status === "dirty";
 var isValid2 = (x) => x.status === "valid";
 var isAsync2 = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/helpers/errorUtil.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil2;
 (function(errorUtil3) {
   errorUtil3.errToObj = (message) => typeof message === "string" ? { message } : message || {};
   errorUtil3.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil2 || (errorUtil2 = {}));
 
-// ../launch-feat-refactor-skills/node_modules/zod/v3/types.js
+// ../../../../../../launch-feat-refactor-skills/node_modules/zod/v3/types.js
 var ParseInputLazyPath2 = class {
   constructor(parent, value, path20, key) {
     this._cachedPath = [];
@@ -71464,15 +71464,28 @@ function gitStatusLines(worktreePath) {
   }
   return (result.stdout || "").split(/\r?\n/).map((line) => line.trimEnd()).filter(Boolean);
 }
-function isAllowedRuntimeDirtyLine(line) {
+function normalizeGitStatusPath(path20) {
+  return path20.startsWith('"') && path20.endsWith('"') ? path20.slice(1, -1).replace(/\\\"/g, '"') : path20;
+}
+function isAllowedRuntimeDirtyPath(path20) {
+  return AUTORESEARCH_WORKTREE_EXCLUDES.some((exclude) => exclude.endsWith("/") ? path20.startsWith(exclude) || path20 === exclude.slice(0, -1) : path20 === exclude);
+}
+function allowedBootstrapDirtyPaths(worktreePath, allowedDirtyPaths = []) {
+  return new Set(
+    allowedDirtyPaths.map((path20) => path20.startsWith(worktreePath) ? path20.slice(worktreePath.length + 1) : null).filter((path20) => Boolean(path20))
+  );
+}
+function isAllowedRuntimeDirtyLine(line, allowedBootstrapPaths) {
   const trimmed = line.trim();
   if (trimmed.length < 4) return false;
-  const path20 = trimmed.slice(3).trim();
-  return trimmed.startsWith("?? ") && AUTORESEARCH_WORKTREE_EXCLUDES.some((exclude) => exclude.endsWith("/") ? path20.startsWith(exclude) || path20 === exclude.slice(0, -1) : path20 === exclude);
+  const path20 = normalizeGitStatusPath(trimmed.slice(3).trim());
+  if (!trimmed.startsWith("?? ")) return false;
+  return isAllowedRuntimeDirtyPath(path20) || allowedBootstrapPaths.has(path20);
 }
-function assertResetSafeWorktree(worktreePath) {
+function assertResetSafeWorktree(worktreePath, allowedDirtyPaths = []) {
   const lines = gitStatusLines(worktreePath);
-  const blocking = lines.filter((line) => !isAllowedRuntimeDirtyLine(line));
+  const allowedBootstrapPaths = allowedBootstrapDirtyPaths(worktreePath, allowedDirtyPaths);
+  const blocking = lines.filter((line) => !isAllowedRuntimeDirtyLine(line, allowedBootstrapPaths));
   if (blocking.length === 0) return;
   throw new Error(`autoresearch_reset_requires_clean_worktree:${worktreePath}:${blocking.join(" | ")}`);
 }
@@ -71917,7 +71930,7 @@ async function prepareAutoresearchRuntime(contract, projectRoot, worktreePath, o
   await assertAutoresearchLockAvailable(projectRoot);
   await ensureRuntimeExcludes(worktreePath);
   await ensureAutoresearchWorktreeDependencies(projectRoot, worktreePath);
-  assertResetSafeWorktree(worktreePath);
+  assertResetSafeWorktree(worktreePath, [contract.missionFile, contract.sandboxFile]);
   const runTag = options.runTag || buildAutoresearchRunTag();
   const runId = buildRunId(contract.missionSlug, runTag);
   const baselineCommit = readGitShortHead(worktreePath);
@@ -72050,7 +72063,7 @@ async function resumeAutoresearchRuntime(projectRoot, runId) {
   }
   await ensureRuntimeExcludes(manifest.worktree_path);
   await ensureAutoresearchWorktreeDependencies(projectRoot, manifest.worktree_path);
-  assertResetSafeWorktree(manifest.worktree_path);
+  assertResetSafeWorktree(manifest.worktree_path, [manifest.mission_file, manifest.sandbox_file]);
   startAutoresearchMode(`autoresearch resume ${runId}`, projectRoot);
   await activateAutoresearchRun(manifest);
   updateAutoresearchMode({
@@ -72150,7 +72163,7 @@ async function finalizeRun(manifest, projectRoot, updates) {
   await deactivateAutoresearchRun(manifest);
 }
 function resetToLastKeptCommit(manifest) {
-  assertResetSafeWorktree(manifest.worktree_path);
+  assertResetSafeWorktree(manifest.worktree_path, [manifest.mission_file, manifest.sandbox_file]);
   requireGitSuccess(manifest.worktree_path, ["reset", "--hard", manifest.last_kept_commit]);
 }
 function validateAutoresearchCandidate(manifest, candidate) {
@@ -72275,7 +72288,7 @@ async function processAutoresearchCandidate(contract, manifest, projectRoot) {
   }
   if (candidate.status === "interrupted") {
     try {
-      assertResetSafeWorktree(manifest.worktree_path);
+      assertResetSafeWorktree(manifest.worktree_path, [manifest.mission_file, manifest.sandbox_file]);
     } catch {
       await finalizeRun(manifest, projectRoot, { status: "failed", stopReason: "interrupted dirty worktree requires operator intervention" });
       return "error";
