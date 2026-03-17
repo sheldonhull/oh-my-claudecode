@@ -2,7 +2,7 @@ import { createInterface } from 'readline/promises';
 import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
-import { join, relative, resolve } from 'path';
+import { join, relative, resolve, sep } from 'path';
 import { parseSandboxContract, slugifyMissionName } from '../autoresearch/contracts.js';
 import { buildTmuxShellCommand, isTmuxAvailable, wrapWithLoginShell } from './tmux-utils.js';
 function buildMissionContent(topic) {
@@ -19,7 +19,7 @@ export async function initAutoresearchMission(opts) {
     const missionDir = join(missionsRoot, opts.slug);
     // Defense-in-depth: ensure slug does not escape missions/ directory
     const rel = relative(missionsRoot, missionDir);
-    if (!rel || rel.startsWith('..') || resolve(rel) === resolve(missionDir)) {
+    if (!rel || rel === '..' || rel.startsWith(`..${sep}`)) {
         throw new Error('Invalid slug: resolves outside missions/ directory.');
     }
     if (existsSync(missionDir)) {

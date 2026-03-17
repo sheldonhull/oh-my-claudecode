@@ -112,6 +112,27 @@ describe('initAutoresearchMission', () => {
             await rm(repo, { recursive: true, force: true });
         }
     });
+    it('allows valid mission creation even when cwd is inside missions root', async () => {
+        const repo = await initRepo();
+        const originalCwd = process.cwd();
+        try {
+            const missionsRoot = join(repo, 'missions');
+            await mkdir(missionsRoot, { recursive: true });
+            process.chdir(missionsRoot);
+            const result = await initAutoresearchMission({
+                topic: 'Check cwd-sensitive slug guard',
+                evaluatorCommand: 'npm run build',
+                slug: 'cwd-guard',
+                repoRoot: repo,
+            });
+            expect(result.missionDir).toBe(join(repo, 'missions', 'cwd-guard'));
+            expect(await readFile(join(result.missionDir, 'mission.md'), 'utf-8')).toMatch(/Check cwd-sensitive slug guard/);
+        }
+        finally {
+            process.chdir(originalCwd);
+            await rm(repo, { recursive: true, force: true });
+        }
+    });
     it('throws if mission directory already exists', async () => {
         const repo = await initRepo();
         try {
