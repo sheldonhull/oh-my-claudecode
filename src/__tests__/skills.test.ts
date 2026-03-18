@@ -119,6 +119,15 @@ describe('Builtin Skills', () => {
       expect(skill?.name).toBe('ai-slop-cleaner');
     });
 
+    it('should surface bundled skill resources for skills with additional files', () => {
+      const skill = getBuiltinSkill('project-session-manager');
+      expect(skill).toBeDefined();
+      expect(skill?.template).toContain('## Skill Resources');
+      expect(skill?.template).toContain('skills/project-session-manager');
+      expect(skill?.template).toContain('`lib/`');
+      expect(skill?.template).toContain('`psm.sh`');
+    });
+
     it('should retrieve the trace skill by name', () => {
       const skill = getBuiltinSkill('trace');
       expect(skill).toBeDefined();

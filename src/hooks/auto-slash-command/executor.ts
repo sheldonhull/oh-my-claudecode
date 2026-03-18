@@ -19,6 +19,7 @@ import type {
 import { resolveLiveData } from './live-data.js';
 import { parseFrontmatter, parseFrontmatterAliases, stripOptionalQuotes } from '../../utils/frontmatter.js';
 import { parseSkillPipelineMetadata, renderSkillPipelineGuidance } from '../../utils/skill-pipeline.js';
+import { renderSkillResourcesGuidance } from '../../utils/skill-resources.js';
 import { renderSkillRuntimeGuidance } from '../../features/builtin-skills/runtime-guidance.js';
 
 /** Claude config directory */
@@ -113,82 +114,99 @@ function discoverCommandsFromDir(
   return commands;
 }
 
+function discoverSkillsFromDir(skillsDir: string): CommandInfo[] {
+  if (!existsSync(skillsDir)) {
+    return [];
+  }
+
+  const skillCommands: CommandInfo[] = [];
+
+  try {
+    const skillDirs = readdirSync(skillsDir, { withFileTypes: true });
+    for (const dir of skillDirs) {
+      if (!dir.isDirectory()) continue;
+
+      const skillPath = join(skillsDir, dir.name, 'SKILL.md');
+      if (!existsSync(skillPath)) continue;
+
+      try {
+        const content = readFileSync(skillPath, 'utf-8');
+        const { metadata: fm, body } = parseFrontmatter(content);
+
+        const rawName = getFrontmatterString(fm, 'name') || dir.name;
+        const canonicalName = toSafeSkillName(rawName);
+        const aliases = Array.from(new Set(
+          parseFrontmatterAliases(fm.aliases)
+            .map((alias: string) => toSafeSkillName(alias))
+            .filter((alias: string) => alias.toLowerCase() !== canonicalName.toLowerCase())
+        ));
+        const commandNames = [canonicalName, ...aliases];
+        const description = getFrontmatterString(fm, 'description') || '';
+        const argumentHint = getFrontmatterString(fm, 'argument-hint');
+        const model = getFrontmatterString(fm, 'model');
+        const agent = getFrontmatterString(fm, 'agent');
+        const pipeline = parseSkillPipelineMetadata(fm);
+
+        for (const commandName of commandNames) {
+          const isAlias = commandName !== canonicalName;
+          const metadata: CommandMetadata = {
+            name: commandName,
+            description,
+            argumentHint,
+            model,
+            agent,
+            pipeline: isAlias ? undefined : pipeline,
+            aliases: isAlias ? undefined : aliases,
+            aliasOf: isAlias ? canonicalName : undefined,
+            deprecatedAlias: isAlias || undefined,
+            deprecationMessage: isAlias
+              ? `Alias "/${commandName}" is deprecated. Use "/${canonicalName}" instead.`
+              : undefined,
+          };
+
+          skillCommands.push({
+            name: commandName,
+            path: skillPath,
+            metadata,
+            content: body,
+            scope: 'skill',
+          });
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return [];
+  }
+
+  return skillCommands;
+}
+
 /**
  * Discover all available commands from multiple sources
  */
 export function discoverAllCommands(): CommandInfo[] {
   const userCommandsDir = join(CLAUDE_CONFIG_DIR, 'commands');
   const projectCommandsDir = join(process.cwd(), '.claude', 'commands');
-  const skillsDir = join(CLAUDE_CONFIG_DIR, 'skills');
+  const projectOmcSkillsDir = join(process.cwd(), '.omc', 'skills');
+  const projectAgentSkillsDir = join(process.cwd(), '.agents', 'skills');
+  const userSkillsDir = join(CLAUDE_CONFIG_DIR, 'skills');
 
   const userCommands = discoverCommandsFromDir(userCommandsDir, 'user');
   const projectCommands = discoverCommandsFromDir(projectCommandsDir, 'project');
+  const projectOmcSkills = discoverSkillsFromDir(projectOmcSkillsDir);
+  const projectAgentSkills = discoverSkillsFromDir(projectAgentSkillsDir);
+  const userSkills = discoverSkillsFromDir(userSkillsDir);
 
-  // Discover skills (each skill directory may have a SKILL.md)
-  const skillCommands: CommandInfo[] = [];
-  if (existsSync(skillsDir)) {
-    try {
-      const skillDirs = readdirSync(skillsDir, { withFileTypes: true });
-      for (const dir of skillDirs) {
-        if (!dir.isDirectory()) continue;
-
-        const skillPath = join(skillsDir, dir.name, 'SKILL.md');
-        if (existsSync(skillPath)) {
-          try {
-            const content = readFileSync(skillPath, 'utf-8');
-            const { metadata: fm, body } = parseFrontmatter(content);
-
-            const rawName = getFrontmatterString(fm, 'name') || dir.name;
-            const canonicalName = toSafeSkillName(rawName);
-            const aliases = Array.from(new Set(
-              parseFrontmatterAliases(fm.aliases)
-                .map((alias: string) => toSafeSkillName(alias))
-                .filter((alias: string) => alias.toLowerCase() !== canonicalName.toLowerCase())
-            ));
-            const commandNames = [canonicalName, ...aliases];
-            const description = getFrontmatterString(fm, 'description') || '';
-            const argumentHint = getFrontmatterString(fm, 'argument-hint');
-            const model = getFrontmatterString(fm, 'model');
-            const agent = getFrontmatterString(fm, 'agent');
-            const pipeline = parseSkillPipelineMetadata(fm);
-
-            for (const commandName of commandNames) {
-              const isAlias = commandName !== canonicalName;
-              const metadata: CommandMetadata = {
-                name: commandName,
-                description,
-                argumentHint,
-                model,
-                agent,
-                pipeline: isAlias ? undefined : pipeline,
-                aliases: isAlias ? undefined : aliases,
-                aliasOf: isAlias ? canonicalName : undefined,
-                deprecatedAlias: isAlias || undefined,
-                deprecationMessage: isAlias
-                  ? `Alias "/${commandName}" is deprecated. Use "/${canonicalName}" instead.`
-                  : undefined,
-              };
-
-              skillCommands.push({
-                name: commandName,
-                path: skillPath,
-                metadata,
-                content: body,
-                scope: 'skill',
-              });
-            }
-          } catch {
-            continue;
-          }
-        }
-      }
-    } catch {
-      // Ignore errors reading skills directory
-    }
-  }
-
-  // Priority: project > user > skills
-  const prioritized = [...projectCommands, ...userCommands, ...skillCommands];
+  // Priority: project commands > user commands > project OMC skills > project compatibility skills > user skills
+  const prioritized = [
+    ...projectCommands,
+    ...userCommands,
+    ...projectOmcSkills,
+    ...projectAgentSkills,
+    ...userSkills,
+  ];
   const seen = new Set<string>();
 
   return prioritized.filter((command) => {
@@ -261,8 +279,11 @@ function formatCommandTemplate(cmd: CommandInfo, args: string): string {
   const pipelineGuidance = cmd.scope === 'skill'
     ? renderSkillPipelineGuidance(cmd.metadata.name, cmd.metadata.pipeline)
     : '';
+  const resourceGuidance = cmd.scope === 'skill' && cmd.path
+    ? renderSkillResourcesGuidance(cmd.path)
+    : '';
   sections.push(
-    [injectedContent.trim(), runtimeGuidance, pipelineGuidance]
+    [injectedContent.trim(), runtimeGuidance, pipelineGuidance, resourceGuidance]
       .filter((section) => section.trim().length > 0)
       .join('\n\n')
   );

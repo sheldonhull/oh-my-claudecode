@@ -37,6 +37,7 @@ describe('auto-slash command skill aliases', () => {
 
     mkdirSync(join(tempConfigDir, 'skills', 'team'), { recursive: true });
     mkdirSync(join(tempConfigDir, 'skills', 'project-session-manager'), { recursive: true });
+    mkdirSync(join(tempProjectDir, '.agents', 'skills'), { recursive: true });
     mkdirSync(join(tempProjectDir, '.claude', 'commands'), { recursive: true });
 
     writeFileSync(
@@ -188,5 +189,38 @@ Deep interview body`
     expect(result.replacementText).toContain('Next skill arguments: `--consensus --direct`');
     expect(result.replacementText).toContain('Skill("oh-my-claudecode:omc-plan")');
     expect(result.replacementText).toContain('`.omc/specs/deep-interview-{slug}.md`');
+  });
+
+  it('discovers project-local compatibility skills from .agents/skills', async () => {
+    mkdirSync(join(tempProjectDir, '.agents', 'skills', 'compat-skill', 'templates'), { recursive: true });
+    writeFileSync(
+      join(tempProjectDir, '.agents', 'skills', 'compat-skill', 'SKILL.md'),
+      `---
+name: compat-skill
+description: Compatibility skill
+---
+
+Compatibility body`
+    );
+    writeFileSync(
+      join(tempProjectDir, '.agents', 'skills', 'compat-skill', 'templates', 'example.txt'),
+      'example'
+    );
+
+    const { findCommand, executeSlashCommand, listAvailableCommands } = await loadExecutor();
+
+    expect(findCommand('compat-skill')?.scope).toBe('skill');
+    expect(listAvailableCommands().some((command) => command.name === 'compat-skill')).toBe(true);
+
+    const result = executeSlashCommand({
+      command: 'compat-skill',
+      args: '',
+      raw: '/compat-skill',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.replacementText).toContain('## Skill Resources');
+    expect(result.replacementText).toContain('.agents/skills/compat-skill');
+    expect(result.replacementText).toContain('`templates/`');
   });
 });
