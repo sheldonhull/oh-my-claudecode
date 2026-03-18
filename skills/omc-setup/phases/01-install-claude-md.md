@@ -44,6 +44,8 @@ partially reconstruct CLAUDE.md.
 After running the script, verify the target file contains both markers. If marker validation
 fails, stop and report the failure instead of writing CLAUDE.md manually.
 
+For `local` installs inside a git repository, the script also seeds `.git/info/exclude` with an OMC block that ignores local `.omc/*` artifacts by default while preserving `.omc/skills/` for version-controlled project skills.
+
 **FALLBACK** if the vendored copy is missing or empty:
 Tell user to run the `/harden` skill to refresh the vendored copy from `docs/CLAUDE.md`.
 
@@ -57,6 +59,7 @@ If `CONFIG_TARGET` is `local`:
 ```
 OMC Project Configuration Complete
 - CLAUDE.md: Updated with vendored OMC instructions at ./.claude/CLAUDE.md
+- Git excludes: Added local `.omc/*` ignore rules to `.git/info/exclude` (keeps `.omc/skills/` trackable)
 - Backup: Previous CLAUDE.md backed up (if existed)
 - Scope: PROJECT - applies only to this project
 - Hooks: Provided by plugin (no manual installation needed)
