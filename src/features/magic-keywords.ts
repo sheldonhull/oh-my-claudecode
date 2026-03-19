@@ -35,8 +35,15 @@ function isInformationalKeywordContext(text: string, position: number, keywordLe
   return INFORMATIONAL_INTENT_PATTERNS.some(pattern => pattern.test(context));
 }
 
+/**
+ * Escape regex metacharacters so a string matches literally inside new RegExp().
+ */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function hasActionableTrigger(text: string, trigger: string): boolean {
-  const pattern = new RegExp(`\\b${trigger}\\b`, 'gi');
+  const pattern = new RegExp(`\\b${escapeRegExp(trigger)}\\b`, 'gi');
 
   for (const match of text.matchAll(pattern)) {
     if (match.index === undefined) {
@@ -363,7 +370,7 @@ Use maximum cognitive effort before responding.`;
 function removeTriggerWords(prompt: string, triggers: string[]): string {
   let result = prompt;
   for (const trigger of triggers) {
-    const regex = new RegExp(`\\b${trigger}\\b`, 'gi');
+    const regex = new RegExp(`\\b${escapeRegExp(trigger)}\\b`, 'gi');
     result = result.replace(regex, '');
   }
   return result.trim();
