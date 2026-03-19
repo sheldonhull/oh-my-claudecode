@@ -3,6 +3,10 @@ import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
+vi.mock('../team/model-contract.js', () => ({
+  isCliAvailable: (agentType: string) => agentType === 'codex',
+}));
+
 const originalCwd = process.cwd();
 let tempConfigDir: string;
 let tempProjectDir: string;

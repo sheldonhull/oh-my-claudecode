@@ -319,7 +319,7 @@ describe('spawnAutoresearchTmux', () => {
 
   it('throws when tmux is unavailable', () => {
     tmuxAvailableMock.mockReturnValue(false);
-    expect(() => spawnAutoresearchTmux('/repo/missions/demo', 'demo')).toThrow(/detached background autoresearch execution/);
+    expect(() => spawnAutoresearchTmux('/repo/missions/demo', 'demo')).toThrow(/background autoresearch execution/);
   });
 
   it('uses explicit cwd, login-shell wrapping, and verifies startup before logging success', () => {
@@ -350,7 +350,7 @@ describe('spawnAutoresearchTmux', () => {
 
     expect(buildTmuxShellCommandMock).toHaveBeenCalledWith(process.execPath, [expect.stringMatching(/bin\/omc\.js$/), 'autoresearch', '/repo/missions/demo']);
     expect(wrapWithLoginShellMock).toHaveBeenCalledWith(`${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`);
-    expect(logSpy).toHaveBeenCalledWith('\nAutoresearch launched in background.');
+    expect(logSpy).toHaveBeenCalledWith('\nAutoresearch launched in background tmux session.');
     expect(logSpy).toHaveBeenCalledWith('  Attach:   tmux attach -t omc-autoresearch-demo');
   });
 });
