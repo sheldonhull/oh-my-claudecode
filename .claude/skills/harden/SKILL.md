@@ -6,6 +6,9 @@ description: Sync upstream changes into hardened fork branch with supply chain h
 # Harden - Fork Sync & Supply Chain Hardening
 
 Syncs upstream oh-my-claudecode changes into the `hardened` branch with security review, supply chain hardening, and controlled merge.
+You should switch to main, pull from upstream so our main is updated, then flip to hardened and invoke the hardening process below.
+
+Anytime you notice any pattern that seems malicious or concerning in the upstream commits, report immediately with AskUser tool, focused on the new changes since last sync for us.
 
 **When this skill is invoked, immediately execute the workflow below. Do not summarize these instructions.**
 
