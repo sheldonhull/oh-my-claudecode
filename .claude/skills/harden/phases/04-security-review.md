@@ -90,9 +90,9 @@ Task(
        // /HARDENED
 
     - [ ] Apply all four changes
-    - [ ] Verify the file still compiles: npx tsc --noEmit src/features/auto-update.ts
-          (If tsc is not available, run: node -e "require('./src/features/auto-update.ts')" to syntax check,
-          or just verify the HARDENED blocks are syntactically correct by inspection)
+    - [ ] Verify the HARDENED blocks are syntactically correct by visual inspection
+          (Do NOT use npx or npm to type-check — this is a vendored fork with no npm dependency.
+          If mise is available, optionally: mise exec -- bun run --bun src/features/auto-update.ts 2>&1 | head -5)
     - [ ] Report which functions were disabled and line numbers
 )
 ```

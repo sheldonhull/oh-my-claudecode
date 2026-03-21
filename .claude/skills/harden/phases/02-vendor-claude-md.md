@@ -15,9 +15,11 @@ Task(
     Update the vendored CLAUDE.OMC.md from upstream's docs/CLAUDE.md:
     - [ ] Extract upstream's docs/CLAUDE.md:
           git show upstream/main:docs/CLAUDE.md > /tmp/upstream-claude.md
-    - [ ] Compute checksums:
-          shasum -a 256 .vendored/CLAUDE.OMC.md (current)
-          shasum -a 256 /tmp/upstream-claude.md (upstream)
+    - [ ] Compute checksums (cross-platform — use whichever is available):
+          sha256sum .vendored/CLAUDE.OMC.md (Linux/Git Bash)
+          shasum -a 256 .vendored/CLAUDE.OMC.md (macOS)
+          certutil -hashfile .vendored/CLAUDE.OMC.md SHA256 (Windows native)
+          (same for /tmp/upstream-claude.md)
     - [ ] If checksums match, report: "✓ Vendored CLAUDE.OMC.md is current. No update needed."
     - [ ] If checksums differ:
           - Show diff: diff -u .vendored/CLAUDE.OMC.md /tmp/upstream-claude.md | head -100

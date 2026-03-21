@@ -1,11 +1,36 @@
 # Phase 1: Install CLAUDE.md
 
+## Upfront Configuration Gathering
+
+Gather ALL setup choices in a single prompt before doing any work. This avoids piecemeal interruptions.
+
+Use AskUserQuestion with a multiselect-style prompt:
+
+**Question:** "Which setup components would you like to configure? (defaults shown)"
+
+**Options:**
+1. **Inject OMC directions into CLAUDE.md (recommended)** — Injects OMC instructions between `<!-- OMC:START -->` / `<!-- OMC:END -->` markers. Your other content is preserved. [DEFAULT: YES]
+2. **Configure HUD statusline** — Sets up the status bar display. Requires restart after. [DEFAULT: NO]
+3. **Configure MCP servers** — Adds external tool integrations (web search, GitHub, etc.). Run `/mcp-setup` separately anytime. [DEFAULT: NO]
+4. **Enable agent teams** — Experimental feature for coordinated multi-agent execution. [DEFAULT: NO]
+5. **Cancel** — Exit without changes
+
+If user selects Cancel, **STOP HERE**. Do not continue to any other phase.
+
+Store the user's choices for later phases:
+- `SETUP_INJECT_CLAUDE_MD` = true/false (option 1)
+- `SETUP_HUD` = true/false (option 2)
+- `SETUP_MCP` = true/false (option 3)
+- `SETUP_TEAMS` = true/false (option 4)
+
+**Note:** Since AskUserQuestion only supports single-select, present each non-default option individually only if the user didn't choose the defaults-only option. Ask a follow-up: "Would you like to also enable any of these optional features?" with options for HUD, MCP, Teams, or "No, just inject directions".
+
 ## Determine Configuration Target
 
 If `--local` flag was passed, set `CONFIG_TARGET=local`.
 If `--global` flag was passed, set `CONFIG_TARGET=global`.
 
-Otherwise (initial setup wizard), use AskUserQuestion to prompt:
+Otherwise, use AskUserQuestion to prompt:
 
 **Question:** "Where should I configure oh-my-claudecode?"
 
@@ -15,17 +40,9 @@ Otherwise (initial setup wizard), use AskUserQuestion to prompt:
 
 Set `CONFIG_TARGET` to `local` or `global` based on user's choice.
 
-## Confirm Before Modifying
+## Skip if not selected
 
-Before running the installer, use AskUserQuestion to confirm:
-
-**Question:** "This will inject OMC instructions (between `<!-- OMC:START -->` / `<!-- OMC:END -->` markers) directly into your CLAUDE.md. Any existing OMC block will be replaced. Your other content is preserved. Proceed?"
-
-**Options:**
-1. **Yes, install** - Inject OMC instructions into CLAUDE.md (backs up existing file first)
-2. **Cancel** - Exit without changes
-
-If user cancels, **STOP HERE**. Do not continue to any other phase.
+If `SETUP_INJECT_CLAUDE_MD` is false, skip the install step and proceed to Phase 2.
 
 ## Install CLAUDE.md (Vendored)
 

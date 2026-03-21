@@ -4,7 +4,8 @@
 
 ## Step 2.1: Setup HUD Statusline
 
-**Note**: If resuming and `lastCompletedStep >= 3`, skip to Step 2.2.
+**Skip condition**: If `SETUP_HUD` is false (user did not select HUD in upfront config), skip to Step 2.2.
+**Skip condition**: If resuming and `lastCompletedStep >= 3`, skip to Step 2.2.
 
 The HUD shows real-time status in Claude Code's status bar. Delegate all HUD/statusLine setup to the `hud` skill:
 
@@ -25,17 +26,30 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-progress.sh" save 3 "$CONFIG_TYPE"
 
 ## Step 2.2: Clear Stale Plugin Cache
 
+Prefer `mise exec -- bun` when mise is available, fall back to `node`:
+
 ```bash
-node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x)).sort((a,c)=>a.localeCompare(c,void 0,{numeric:true}));if(v.length<=1){console.log('Cache is clean');process.exit()}v.slice(0,-1).forEach(x=>{f.rmSync(p.join(b,x),{recursive:true,force:true})});console.log('Cleared',v.length-1,'stale cache version(s)')}catch{console.log('No cache directory found (normal for new installs)')}"
+if command -v mise &>/dev/null; then
+  RUNTIME="mise exec -- bun run -e"
+else
+  RUNTIME="node -e"
+fi
+
+$RUNTIME "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x)).sort((a,c)=>a.localeCompare(c,void 0,{numeric:true}));if(v.length<=1){console.log('Cache is clean');process.exit()}v.slice(0,-1).forEach(x=>{f.rmSync(p.join(b,x),{recursive:true,force:true})});console.log('Cleared',v.length-1,'stale cache version(s)')}catch{console.log('No cache directory found (normal for new installs)')}"
 ```
 
-## Step 2.3: Check for Updates
+## Step 2.3: Check Installed Version
 
-Notify user if a newer version is available:
+Report the installed version (no npm registry check — this is a vendored fork):
 
 ```bash
-# Detect installed version (cross-platform)
-node -e "
+if command -v mise &>/dev/null; then
+  RUNTIME="mise exec -- bun run -e"
+else
+  RUNTIME="node -e"
+fi
+
+$RUNTIME "
 const p=require('path'),f=require('fs'),h=require('os').homedir();
 const d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude');
 let v='';
@@ -48,24 +62,7 @@ if(v==='')try{const j=JSON.parse(f.readFileSync('.omc-version.json','utf-8'));v=
 if(v==='')for(const c of['.claude/CLAUDE.md',p.join(d,'CLAUDE.md')]){try{const m=f.readFileSync(c,'utf-8').match(/^# oh-my-claudecode.*?(v?\d+\.\d+\.\d+)/m);if(m){v=m[1].replace(/^v/,'');break}}catch{}}
 console.log('Installed:',v||'(not found)');
 "
-
-# Check npm for latest version
-LATEST_VERSION=$(npm view oh-my-claude-sisyphus version 2>/dev/null)
-
-if [ -n "$INSTALLED_VERSION" ] && [ -n "$LATEST_VERSION" ]; then
-  if [ "$INSTALLED_VERSION" != "$LATEST_VERSION" ]; then
-    echo ""
-    echo "UPDATE AVAILABLE:"
-    echo "  Installed: v$INSTALLED_VERSION"
-    echo "  Latest:    v$LATEST_VERSION"
-    echo ""
-    echo "To update, run: claude /install-plugin oh-my-claudecode"
-  else
-    echo "You're on the latest version: v$INSTALLED_VERSION"
-  fi
-elif [ -n "$LATEST_VERSION" ]; then
-  echo "Latest version available: v$LATEST_VERSION"
-fi
+# No npm registry check — vendored fork updates via /harden skill
 ```
 
 ## Step 2.4: Set Default Execution Mode
@@ -96,56 +93,24 @@ echo "Default execution mode set to: USER_CHOICE"
 
 **Note**: This preference ONLY affects generic keywords ("fast", "parallel"). Explicit keywords ("ulw") always override this preference.
 
-## Step 2.5: Install OMC CLI Tool
+## Step 2.5: Detect OMC CLI Tool
 
 The OMC CLI (`omc` command) provides standalone helper commands such as `omc hud`, `omc teleport`, and `omc team ...`.
 
-First, check if the CLI is already installed:
+Check if the CLI is already available (vendored fork — no npm install):
 
 ```bash
 if command -v omc &>/dev/null; then
   OMC_CLI_VERSION=$(omc --version 2>/dev/null | head -1 || echo "installed")
-  echo "OMC CLI already installed: $OMC_CLI_VERSION"
-  OMC_CLI_INSTALLED="true"
+  echo "OMC CLI found: $OMC_CLI_VERSION"
 else
-  OMC_CLI_INSTALLED="false"
+  echo "OMC CLI not found on PATH."
+  echo "The CLI is bundled with the plugin. All core functionality is available through the plugin system."
+  echo "If you need the standalone CLI, it's available at: ${CLAUDE_PLUGIN_ROOT}/bin/omc"
 fi
 ```
 
-If `OMC_CLI_INSTALLED` is `"true"`, skip the rest of this step.
-
-If `OMC_CLI_INSTALLED` is `"false"`, use AskUserQuestion:
-
-**Question:** "Would you like to install the OMC CLI globally for standalone helper commands? (`omc`, `omc hud`, `omc teleport`)"
-
-**Options:**
-1. **Yes (Recommended)** - Install `oh-my-claude-sisyphus` via `npm install -g`
-2. **No - Skip** - Skip installation (can install manually later with `npm install -g oh-my-claude-sisyphus`)
-
-If user chooses **Yes**:
-
-```bash
-if ! command -v npm &>/dev/null; then
-  echo "WARNING: npm not found. Cannot install OMC CLI automatically."
-  echo "Install Node.js/npm first, then run: npm install -g oh-my-claude-sisyphus"
-else
-  if npm install -g oh-my-claude-sisyphus 2>&1; then
-    echo "OMC CLI installed successfully."
-    if command -v omc &>/dev/null; then
-      OMC_CLI_VERSION=$(omc --version 2>/dev/null | head -1 || echo "installed")
-      echo "Verified: omc $OMC_CLI_VERSION"
-    else
-      echo "Installed but 'omc' not on PATH. You may need to restart your shell."
-    fi
-  else
-    echo "WARNING: Failed to install OMC CLI (permission issue or network error)."
-    echo "You can install manually later: npm install -g oh-my-claude-sisyphus"
-    echo "Or with sudo: sudo npm install -g oh-my-claude-sisyphus"
-  fi
-fi
-```
-
-**Note**: The CLI is optional. All core functionality is also available through the plugin system.
+**Note**: This is a vendored fork. No `npm install -g` needed. The CLI is bundled with the plugin cache.
 
 ## Step 2.6: Select Task Management Tool
 

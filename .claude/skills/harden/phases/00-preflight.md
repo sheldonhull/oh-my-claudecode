@@ -44,9 +44,12 @@ Task(
     - [ ] Verify .vendored/install-claude-md.sh exists and is executable
     - [ ] Verify .vendored/CLAUDE.OMC.md exists and is non-empty
     - [ ] Verify .claude/skills/harden/SKILL.md exists
-    - [ ] Verify node is available: node --version (must be >=20)
+    - [ ] Detect runtime: check if mise is available (mise --version)
+          If mise found: prefer `mise exec -- bun` for runtime calls
+          If mise not found: fall back to node --version (must be >=20)
     - [ ] Confirm: no package.json scripts are required for the harden workflow
-    - [ ] Report: "✓ Harden workflow is self-contained. No npm install required."
+    - [ ] Confirm: no npm/npx calls anywhere in .vendored/ or .claude/skills/harden/
+    - [ ] Report: "✓ Harden workflow is self-contained. Runtime: <mise+bun|node>. No npm install required."
 )
 ```
 

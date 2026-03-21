@@ -42,7 +42,9 @@ These directives are applied automatically during every sync:
 5. **Setup prompts before modifying** — `skills/omc-setup/phases/01-install-claude-md.md` requires user confirmation via AskUserQuestion before injecting into CLAUDE.md.
 6. **GitHub Actions disabled** — all workflows (CI, release, publish, cleanup, stale, auto-label) disabled via `gh workflow disable`. No file changes needed — uses GitHub API, zero merge conflict risk.
 7. **No npm publish** — this is a local vendored fork. No publishing workflow.
-8. **Node-only runtime** — the only required binary is `node >=20` (user manages via global mise). No additional tool installs needed.
+8. **Prefer mise exec bun** — when `mise` is detected, prefer `mise exec -- bun` for runtime invocations instead of bare `node`. Falls back to `node >=20` if mise/bun unavailable. No npm/npx calls anywhere in setup or harden paths.
+9. **Upfront config gathering** — `skills/omc-setup/phases/01-install-claude-md.md` gathers ALL configuration choices (inject directions, HUD, MCP, teams, etc.) in a single AskUser prompt before any work begins. Defaults: inject directions=YES, HUD=NO, MCP=NO. No piecemeal prompting during later phases.
+10. **No npm sisyphus** — all references to `npm view oh-my-claude-sisyphus`, `npm install -g oh-my-claude-sisyphus` removed from setup. This is a vendored fork; the CLI is already available via the plugin cache.
 
 ### What is left alone (acceptable)
 
@@ -58,4 +60,5 @@ These directives are applied automatically during every sync:
 - All upstream changes reviewed before merge
 - Targeted merge changes use comment blocks for traceability
 - New hardening content stays in new files to minimize merge conflicts with upstream
-- Only runtime binary requirement: `node >=20`
+- Only runtime binary requirement: `node >=20` (prefer `mise exec -- bun` when mise is available)
+- No npm/npx calls in any setup or harden path — everything vendored

@@ -1,6 +1,7 @@
 # Phase 3: Integration Setup
 
 **Skip condition**: If resuming and `lastCompletedStep >= 6`, skip this entire phase.
+**Skip condition**: If neither `SETUP_MCP` nor `SETUP_TEAMS` were selected in upfront config (Phase 1), skip this entire phase.
 
 ## Step 3.1: Verify Plugin Installation
 
@@ -9,6 +10,8 @@ grep -q "oh-my-claudecode" ~/.claude/settings.json && echo "Plugin verified" || 
 ```
 
 ## Step 3.2: Configure Agent Teams (Optional)
+
+**Skip condition**: If `SETUP_TEAMS` is false (user did not select teams in upfront config), skip to Save Progress.
 
 Agent teams are an experimental Claude Code feature that lets you spawn N coordinated agents working on a shared task list with inter-agent messaging. **Teams are disabled by default** and require enabling via `settings.json`.
 

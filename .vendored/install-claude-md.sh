@@ -41,8 +41,21 @@ if [ -f "$TARGET_PATH" ]; then
   echo "Backed up existing CLAUDE.md to $BACKUP_PATH"
 fi
 
+# Cross-platform SHA-256 (Windows/Git Bash lacks shasum)
+_sha256() {
+  if command -v sha256sum &>/dev/null; then
+    sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum &>/dev/null; then
+    shasum -a 256 "$1" | cut -d' ' -f1
+  elif command -v certutil &>/dev/null; then
+    certutil -hashfile "$1" SHA256 2>/dev/null | sed -n '2p' | tr -d ' '
+  else
+    echo "no-sha256-tool" >&2; echo "unknown"
+  fi
+}
+
 # Compute checksum of vendored source for audit trail
-CHECKSUM=$(shasum -a 256 "$VENDORED_SOURCE" | cut -d' ' -f1)
+CHECKSUM=$(_sha256 "$VENDORED_SOURCE")
 echo "Vendored source checksum (SHA-256): $CHECKSUM"
 
 # Use vendored copy (no curl, no network)
